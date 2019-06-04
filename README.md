@@ -10,7 +10,7 @@
 *  `pip3 install beautifulsoup4`
 *  `pip3 install python-telegram-bot --upgrade`
 
-* `ln -ls /wispr/bin/wispr-cli /usr/bin/local/wispr-cli
+* `ln -ls /wispr/bin/wispr-cli /usr/local/bin/wispr-cli
 
 * In order to run the tip-bot effectively, a Bitcoin-core based client is needed. For this git Wispr-cli is used , but any major alternate crypto-currency client could easily be incorperated. 
 
