@@ -1,173 +1,229 @@
-import json
-import codecs
-import requests
-from bs4 import BeautifulSoup, SoupStrainer
-import re
-import subprocess
-from telegram.ext.dispatcher import run_async
-from telegram.ext import Updater
-from html import escape
-
-updater = Updater(token='bot:token')
-dispatcher = updater.dispatcher
-
+import commandprocessor
 import logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-					level=logging.INFO)
 
-def commands(bot, update):
-	user = update.message.from_user.username 
-	bot.send_message(chat_id=update.message.chat_id, text="Initiating commands /tip & /withdraw have a specfic format,\n use them like so:" + "\n \n Parameters: \n <user> = target user to tip \n <amount> = amount of WSP to utilise \n <address> = WISPR address to withdraw to \n \n Tipping format: \n /tip <user> <amount> \n \n Withdrawing format: \n /withdraw <address> <amount>")
+from botusererror import BotUserError
+from configuration import Configuration
+from datetime import datetime
+from helpers import markethelper
+from helpers import commonhelper
+from messagetouser import Message
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
-def help(bot, update):
-	bot.send_message(chat_id=update.message.chat_id, text="The following commands are at your disposal: /verify , /commands , /deposit , /tip , /withdraw , /price , /marketcap or /balance" + "\n \n In order to start using the bot you first need to use /verify to register your Telegram @ user handle with the bot" + "\n \n Tipping format: \n /tip <userhandle> <amount> \n \n Withdrawing format: \n /withdraw <address> <amount>")
+logger = logging.getLogger(__name__)
 
-def deposit(bot, update):
-	user = update.message.from_user.username
-	if user is None:
-		bot.send_message(chat_id=update.message.chat_id, text="Please set a telegram username in your profile settings!")
-	else:
-		address = "/usr/local/bin/wispr-cli"
-		result = subprocess.run([address,"getaccountaddress",user],stdout=subprocess.PIPE)
-		clean = (result.stdout.strip()).decode("utf-8")
-		bot.send_message(chat_id=update.message.chat_id, text="@{0} your depositing address is: {1}".format(user,clean))
 
-def tip(bot,update):
-	user = update.message.from_user.username
-	target = update.message.text[5:]
-	amount =  target.split(" ")[1]
-	target =  target.split(" ")[0]
-	if user is None:
-		bot.send_message(chat_id=update.message.chat_id, text="Please set a telegram username in your profile settings!")
-	else:
-		machine = "@WisprTip_bot"
-		if target == machine:
-			bot.send_message(chat_id=update.message.chat_id, text="WHEN HUMAN?")
-		elif "@" in target:
-			target = target[1:]
-			user = update.message.from_user.username 
-			core = "/usr/local/bin/wispr-cli"
-			result = subprocess.run([core,"getbalance",user],stdout=subprocess.PIPE)
-			balance = float((result.stdout.strip()).decode("utf-8"))
-			amount = float(amount)
-			if balance < amount:
-				bot.send_message(chat_id=update.message.chat_id, text="@{0} you have insufficent funds.".format(user))
-			elif target == user:
-				bot.send_message(chat_id=update.message.chat_id, text="You can't tip yourself silly.")
-			else:
-				balance = str(balance)
-				amount = str(amount) 
-				tx = subprocess.run([core,"move",user,target,amount],stdout=subprocess.PIPE)
-				bot.send_message(chat_id=update.message.chat_id, text="@{0} tipped @{1} of {2} WSP".format(user, target, amount))
-		else: 
-			bot.send_message(chat_id=update.message.chat_id, text="Error that user is not applicable.")
+def init():
+    global active_users
+    active_users = None
 
-def balance(bot,update):
-	quote_page = requests.get('https://www.worldcoinindex.com/coin/wispr')
-	strainer = SoupStrainer('div', attrs={'class': 'row mob-coin-table'})
-	soup = BeautifulSoup(quote_page.content, 'html.parser', parse_only=strainer)
-	name_box = soup.find('div', attrs={'class':'col-md-6 col-xs-6 coinprice'})
-	name = name_box.text.replace("\n","")
-	price = re.sub(r'\n\s*\n', r'\n\n', name.strip(), flags=re.M)
-	price = re.sub("[^0-9^.]", "", price)
-	price = float(price)
-	user = update.message.from_user.username
-	if user is None:
-		bot.send_message(chat_id=update.message.chat_id, text="Please set a telegram username in your profile settings!")
-	else:
-		core = "/usr/local/bin/wispr-cli"
-		result = subprocess.run([core,"getbalance",user],stdout=subprocess.PIPE)
-		clean = (result.stdout.strip()).decode("utf-8")
-		balance  = float(clean)
-		fiat_balance = balance * price
-		fiat_balance = str(round(fiat_balance,3))
-		balance =  str(round(balance,3))
-		bot.send_message(chat_id=update.message.chat_id, text="@{0} your current balance is: {1} WSP ≈  ${2}".format(user,balance,fiat_balance))
 
-def price(bot,update):
-	quote_page = requests.get('https://www.worldcoinindex.com/coin/wispr')
-	strainer = SoupStrainer('div', attrs={'class': 'row mob-coin-table'})
-	soup = BeautifulSoup(quote_page.content, 'html.parser', parse_only=strainer)
-	name_box = soup.find('div', attrs={'class':'col-md-6 col-xs-6 coinprice'})
-	name = name_box.text.replace("\n","")
-	price = re.sub(r'\n\s*\n', r'\n\n', name.strip(), flags=re.M)
-	fiat = soup.find('span', attrs={'class': ''})
-	kkz = fiat.text.replace("\n","")
-	percent = re.sub(r'\n\s*\n', r'\n\n', kkz.strip(), flags=re.M)
-	quote_page = requests.get('https://bittrex.com/api/v1.1/public/getticker?market=btc-wsp')
-	soup = BeautifulSoup(quote_page.content, 'html.parser').text
-	btc = soup[80:]
-	sats = btc[:-2]
-	bot.send_message(chat_id=update.message.chat_id, text="WSP is valued at {0} Δ {1} ≈ {2}".format(price,percent,sats) + " ฿")
+init()
 
-def withdraw(bot,update):
-	user = update.message.from_user.username
-	if user is None:
-		bot.send_message(chat_id=update.message.chat_id, text="Please set a telegram username in your profile settings!")
-	else:
-		target = update.message.text[9:]
-		address = target[:35]
-		address = ''.join(str(e) for e in address)
-		target = target.replace(target[:35], '')
-		amount = float(target)
-		core = "/usr/local/bin/wispr-cli"
-		result = subprocess.run([core,"getbalance",user],stdout=subprocess.PIPE)
-		clean = (result.stdout.strip()).decode("utf-8")
-		balance = float(clean)
-		if balance < amount:
-			bot.send_message(chat_id=update.message.chat_id, text="@{0} you have insufficent funds.".format(user))
-		else:
-			amount = str(amount)
-			tx = subprocess.run([core,"sendfrom",user,address,amount],stdout=subprocess.PIPE)
-			bot.send_message(chat_id=update.message.chat_id, text="@{0} has successfully withdrew to address: {1} of {2} WSP" .format(user,address,amount))
 
-def verify(bot,update):
-	user = update.message.from_user.username
-	bot.send_message(chat_id=update.message.chat_id, text="Hello @{0}, you have successfully verified your Telegram user handle!".format(user))
+def commands( bot, update ):
+    activity_tracker(bot, update)
+    bot.send_message( chat_id=update.message.chat_id, text=Message.COMMANDS )
 
-def moon(bot,update):
-  	bot.send_message(chat_id=update.message.chat_id, text="Moon mission inbound!")
 
-def marketcap(bot,update):
-	quote_page = requests.get('https://www.worldcoinindex.com/coin/wispr')
-	strainer = SoupStrainer('div', attrs={'class': 'row mob-coin-table'})
-	soup = BeautifulSoup(quote_page.content, 'html.parser', parse_only=strainer)
-	name_box = soup.find('div', attrs={'class':'col-md-6 col-xs-6 coin-marketcap'})
-	name = name_box.text.replace("\n","")
-	mc = re.sub(r'\n\s*\n', r'\n\n', name.strip(), flags=re.M)
-	bot.send_message(chat_id=update.message.chat_id, text="The current market cap of WISPR is valued at {0}".format(mc))
+def help( bot, update ):
+    activity_tracker(bot, update)
+    # keyboard = [ [ InlineKeyboardButton( "Option 1", callback_data='1' ),
+    #                InlineKeyboardButton( "Option 2", callback_data='2' ) ],
+    #
+    #              [ InlineKeyboardButton( "Option 3", callback_data='3' ) ] ]
+    #
+    # reply_markup = InlineKeyboardMarkup( keyboard )
+    #
+    # update.message.reply_text( 'Please choose:', reply_markup=reply_markup )
+    bot.send_message( chat_id=update.message.chat_id, text=Message.HELP )
 
-from telegram.ext import CommandHandler
 
-commands_handler = CommandHandler('commands', commands)
-dispatcher.add_handler(commands_handler)
+#
+# def button( bot, update ):
+#     query = update.callback_query
+#     query.edit_message_text( text="Selected option: {}".format( query.data ) )
 
-moon_handler = CommandHandler('moon', moon)
-dispatcher.add_handler(moon_handler)
 
-verify_handler = CommandHandler('verify', verify)
-dispatcher.add_handler(verify_handler)
+def deposit( bot, update ):
+    activity_tracker(bot, update)
+    try:
+        user = commonhelper.get_username( update )
+        deposit_address = commandprocessor.run_wallet_command( [ 'getaccountaddress', user ] )
+        bot.send_message( chat_id=update.message.chat_id,
+                          text='@{0}, Your depositing address is: {1}'.format( user, deposit_address ) )
+    except BotUserError as e:
+        bot.send_message( chat_id=update.message.chat_id, text=e.message )
+        logger.debug( e )
 
-withdraw_handler = CommandHandler('withdraw', withdraw)
-dispatcher.add_handler(withdraw_handler)
 
-marketcap_handler = CommandHandler('marketcap', marketcap)
-dispatcher.add_handler(marketcap_handler)
+def tip( bot, update ):
+    activity_tracker(bot, update)
+    chat_id = update.message.chat_id
+    arguments = update.message.text.split( ' ' )
+    try:
+        if len( arguments ) < 3:
+            raise BotUserError( Message.TIP_ERROR )
 
-deposit_handler = CommandHandler('deposit', deposit)
-dispatcher.add_handler(deposit_handler)
+        user = commonhelper.get_username( update )
+        target = arguments[ 1 ]
+        amount = arguments[ 2 ]
+        machine = '@' + Configuration.TELEGRAM_BOT_NAME
 
-price_handler = CommandHandler('price', price)
-dispatcher.add_handler(price_handler)
+        # TODO: Question of business logic
+        if target == machine:
+            raise BotUserError( 'Can not tip the bot.' )
 
-tip_handler = CommandHandler('tip', tip)
-dispatcher.add_handler(tip_handler)
+        if '@' not in target:
+            raise BotUserError( 'That user ´{0}´ is not applicable.'.format( target ) )
 
-balance_handler = CommandHandler('balance', balance)
-dispatcher.add_handler(balance_handler)
+        target = target[ 1: ]
+        amount = commonhelper.get_validated_amount( amount, user )
 
-help_handler = CommandHandler('help', help)
-dispatcher.add_handler(help_handler)
+        if target == user:
+            raise BotUserError( 'You can not tip Yourself.' )
 
-updater.start_polling()
+        if commandprocessor.run_wallet_command( [ 'move', user, target, amount ] ):
+            bot.send_message( chat_id=chat_id,
+                              text='@{0} tipped @{1} of {2} {3}'.format( user, target, amount,
+                                                                         Configuration.COIN_SYMBOL ) )
+        else:
+            raise BotUserError( Message.GENERIC_ERROR )
 
+    except BotUserError as e:
+        bot.send_message( chat_id=chat_id, text=e.message )
+    except ValueError:
+        bot.send_message( chat_id=chat_id,
+                          text=Message.GENERIC_ERROR )
+
+
+def balance( bot, update ):
+    activity_tracker(bot, update)
+    try:
+        user = commonhelper.get_username( update )
+        fiat_price = markethelper.get_fiat_price()
+        user_balance = commonhelper.get_user_balance( user )
+        fiat_balance = user_balance * fiat_price
+        fiat_balance = round( fiat_balance, 3 )
+        user_balance = round( user_balance, 3 )
+        if user_balance == 0:
+            message = '@{0}, Your current balance is empty.'.format( user )
+        else:
+            message = '@{0}, Your current balance is: {1} {2} ≈  $ {3}'.format( user, user_balance,
+                                                                                Configuration.COIN_SYMBOL,
+                                                                                fiat_balance )
+        bot.send_message( chat_id=update.message.chat_id,
+                          text=message )
+    except BotUserError as e:
+        bot.send_message( chat_id=update.message.chat_id,
+                          text=e.message )
+
+
+def withdraw( bot, update ):
+    activity_tracker(bot, update)
+    chat_id = update.message.chat_id
+    arguments = update.message.text.split( ' ' )
+    try:
+        user = commonhelper.get_username( update )
+
+        if len( arguments ) < 3:
+            raise BotUserError( Message.WITHDRAW_ERROR )
+
+        address = arguments[ 1 ]
+        address = commonhelper.get_validated_address( address )
+        amount = arguments[ 2 ]
+        amount = commonhelper.get_validated_amount( amount, user )
+
+        commandprocessor.run_wallet_command( 'sendfrom' + arguments )
+        bot.send_message( chat_id=chat_id,
+                          text='@{0} has successfully withdrawn to address: {1} of {2} {3}.'.format(
+                                  user, address, amount, Configuration.COIN_SYMBOL ) )
+
+    except BotUserError as e:
+        bot.send_message( chat_id=chat_id, text=e.message )
+    except ValueError:
+        bot.send_message( chat_id=chat_id,
+                          text=Message.GENERIC_ERROR )
+
+
+def market( bot, update ):
+    activity_tracker(bot, update)
+    fiat_price = markethelper.get_fiat_price()
+    market_cap = markethelper.get_market_cap()
+    fiat_price = round( fiat_price, 4 )
+    market_cap = round( market_cap, 2 )
+    bot.send_message( chat_id=update.message.chat_id,
+                      text='The current market cap of {0} is $ {1}.\n'
+                           '1 {0} is valued at $ {2}.'.format( Configuration.COIN_SYMBOL, market_cap, fiat_price ) )
+
+
+def rain( bot, update ):
+    activity_tracker(bot, update)
+    chat_id = update.message.chat_id
+    arguments = update.message.text.split( ' ' )
+    try:
+        user = commonhelper.get_username( update )
+
+        if len( arguments ) < 2:
+            raise BotUserError( Message.RAIN_ERROR )
+
+        amount_total = arguments[ 1 ]
+        amount_total = commonhelper.get_validated_amount( amount_total, user )
+
+        eligible_users = get_eligible_active_users( update, user )
+        if len( eligible_users ) > 0:
+            amount_per_user = float( amount_total ) / len( eligible_users )
+            amount_per_user = str( amount_per_user )
+            at_users = '|'
+
+            for eligible_user in eligible_users:
+                commandprocessor.run_wallet_command( [ 'move', user, eligible_user, amount_per_user ] )
+                logger.info( 'rain amount sent to ' + eligible_user )
+                at_users = at_users.__add__(' @' + eligible_user + ' |')
+
+            message = '@{0} has rained {1} {2} to {3} active users: {4}\n' \
+                      '{5} {2} received per user.' \
+                .format( user, amount_total, Configuration.COIN_SYMBOL, len( eligible_users ), at_users, amount_per_user )
+        else:
+            message = 'Found no active users except You... :\'('
+        bot.send_message( chat_id=chat_id,
+                          text=message )
+    except BotUserError as e:
+        bot.send_message( chat_id=chat_id, text=e.message )
+    except ValueError:
+        bot.send_message( chat_id=chat_id, text=Message.GENERIC_ERROR )
+
+
+def activity_tracker( bot, update ):
+    global active_users
+    chat_id = update.message.chat_id
+    now = datetime.now()
+    current_time = datetime.timestamp( now )
+    user = commonhelper.get_username( update )
+    if active_users is None:
+        active_users = { chat_id: { user: current_time } }
+    elif chat_id not in active_users:
+        active_users.update( { chat_id: { user: current_time } } )
+    else:
+        if user not in active_users[ chat_id ]:
+            active_users[ chat_id ].update( { user: current_time } )
+        else:
+            active_users[ chat_id ][ user ] = current_time
+    logger.debug( '@{0} spoke @{1} at {2}.'.format( user, chat_id, active_users[ chat_id ][ user ] ) )
+
+
+def get_eligible_active_users( update, user ):
+    global active_users
+    eligible_users = [ ]
+    chat_id = update.message.chat_id
+    if active_users is not None and active_users[ chat_id ] is not None:
+        for active_user in active_users[ chat_id ]:
+            now = datetime.now()
+            current_time = datetime.timestamp( now )
+            if current_time - active_users[ chat_id ][
+                active_user ] <= Configuration.CHAT_ACTIVITY_TIME and active_user != user:
+                eligible_users.append( active_user )
+    if len( eligible_users ) is 0:
+        logger.debug(
+                'No eligible users for receiving rain in chatId: {0} found from active users: {1}'.format( chat_id,
+                                                                                                           active_users ) )
+    return eligible_users
