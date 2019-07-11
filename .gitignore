@@ -1,4 +1,5 @@
-.idea
-venv
-config.json
 __pycache__
+.idea
+config.json
+logs
+venv

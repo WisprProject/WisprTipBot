@@ -1,7 +1,7 @@
 import json
 import subprocess
 
-from configuration import Configuration
+from logic.helpers.configuration import Configuration
 
 CLI_LOCATION = Configuration.CLI_LOCATION
 

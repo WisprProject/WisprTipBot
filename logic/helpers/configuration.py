@@ -6,7 +6,7 @@ with open( 'config.json', 'r' ) as configFile:
 
 class Configuration:
     REQUEST_KWARGS = config[ 'REQUEST_KWARGS' ]
-    LOGGING_LEVEL = config[ 'LOGGING_LEVEL' ][ 'INFO' ]
+    LOGGING_LEVEL = config[ 'LOGGING_LEVEL' ]
     TELEGRAM_BOT_TOKEN = config[ 'TELEGRAM_BOT_TOKEN' ]
     TELEGRAM_BOT_NAME = config[ 'TELEGRAM_BOT_NAME' ]
     COIN_SYMBOL = config[ 'COIN_SYMBOL' ]
@@ -14,3 +14,4 @@ class Configuration:
     COINMARKETCAP_CACHE_UPDATE_INTERVAL = config[ 'COINMARKETCAP_CACHE_UPDATE_INTERVAL' ]
     CLI_LOCATION = config[ 'WALLET_CLI_LOCATION' ]
     CHAT_ACTIVITY_TIME = config[ 'CHAT_ACTIVITY_TIME' ]
+    DATABASE_LOCATION = config[ 'DATABASE' ][ 'LOCATION' ]

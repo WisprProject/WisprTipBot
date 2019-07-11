@@ -1,7 +1,7 @@
 import json
 import logging
 
-from configuration import Configuration
+from logic.helpers.configuration import Configuration
 from datetime import datetime
 from requests import Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
@@ -54,6 +54,6 @@ def update_coin_data_cache():
         coin_update_time = datetime.timestamp( now )
 
         logger.info( 'Coin data cache updated' )
-        logger.debug( coin_data )
+        logger.info( coin_data )
     except (ConnectionError, Timeout, TooManyRedirects) as e:
         logger.error( e )

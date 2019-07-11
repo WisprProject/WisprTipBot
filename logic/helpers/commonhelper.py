@@ -1,14 +1,15 @@
-import commandprocessor
+from logic import commandprocessor, messages
 
-from messagetouser import Message
-from botusererror import BotUserError
+from logic.botusererror import BotUserError
 
 
 def get_username( update ):
     user = update.message.from_user.username
+
     if user is not None:
         return user
-    raise BotUserError( Message.SET_USERNAME )
+
+    raise BotUserError( messages.SET_USERNAME )
 
 
 def get_validated_address( address ):
@@ -17,7 +18,7 @@ def get_validated_address( address ):
         if commandprocessor.run_wallet_command( command, 'isvalid' ):
             return address
 
-    raise BotUserError( '´{0}´ is not a valid address.'.format( address ) )
+    raise BotUserError( f'´{address}´ is not a valid address.' )
 
 
 def get_user_balance( user ):
@@ -36,14 +37,17 @@ def get_validated_amount( amount, user ):
         else:
             amount = float( amount )
     except ValueError:
-        raise BotUserError( '´{0}´ is not a valid amount'.format( amount ) )
+        raise BotUserError( f'´{amount}´ is not a valid amount' )
 
     if amount <= 0:
-        raise BotUserError( 'Amount ´{0}´ has to be bigger than 0'.format( amount ) )
+        raise BotUserError( f'Amount ´{amount}´ has to be bigger than 0' )
+
+    if amount < 0.1:
+        raise BotUserError( f'Amount ´{amount}´ has to be greater ot equal to 0.1' )
 
     user_balance = get_user_balance( user )
 
     if user_balance < amount:
-        raise BotUserError( '@{0} You have insufficient funds.'.format( user ) )
+        raise BotUserError( f'@{user} You have insufficient funds.' )
 
     return str( amount )
