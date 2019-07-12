@@ -1,35 +1,23 @@
 from logic import commandprocessor, messages
 import logging
 
+from logic.activitytracker import ActivityTracker
 from logic.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
-from datetime import datetime
 from logic.helpers import commonhelper, markethelper
 
 logger = logging.getLogger( __name__ )
 
 
-def init():
-    global active_users
-    active_users = None
-
-
-init()
-
-
 def commands( bot, update ):
-    activity_tracker( bot, update )
     bot.send_message( chat_id = update.message.chat_id, text = messages.COMMANDS )
 
 
 def help( bot, update ):
-    activity_tracker( bot, update )
     bot.send_message( chat_id = update.message.chat_id, text = messages.HELP )
 
 
-
 def deposit( bot, update ):
-    activity_tracker(bot, update)
     try:
         user = commonhelper.get_username( update )
         deposit_address = commandprocessor.run_wallet_command( [ 'getaccountaddress', user ] )
@@ -41,7 +29,6 @@ def deposit( bot, update ):
 
 
 def tip( bot, update ):
-    activity_tracker(bot, update)
     chat_id = update.message.chat_id
     arguments = update.message.text.split( ' ' )
     try:
@@ -76,7 +63,6 @@ def tip( bot, update ):
 
 
 def balance( bot, update ):
-    activity_tracker(bot, update)
     try:
         user = commonhelper.get_username( update )
         fiat_price = markethelper.get_fiat_price()
@@ -101,7 +87,6 @@ def balance( bot, update ):
 
 
 def withdraw( bot, update ):
-    activity_tracker(bot, update)
     chat_id = update.message.chat_id
     arguments = update.message.text.split( ' ' )
     try:
@@ -128,7 +113,6 @@ def withdraw( bot, update ):
 
 
 def market( bot, update ):
-    activity_tracker(bot, update)
     fiat_price = markethelper.get_fiat_price()
     market_cap = markethelper.get_market_cap()
     fiat_price = round( fiat_price, 4 )
@@ -139,7 +123,6 @@ def market( bot, update ):
 
 
 def rain( bot, update ):
-    activity_tracker(bot, update)
     chat_id = update.message.chat_id
     arguments = update.message.text.split( ' ' )
     try:
@@ -151,7 +134,7 @@ def rain( bot, update ):
         amount_total = arguments[ 1 ]
         amount_total = commonhelper.get_validated_amount( amount_total, user )
 
-        eligible_users = get_eligible_active_users( update, user )
+        eligible_users = ActivityTracker().get_current_active_users( update, user )
 
         if len( eligible_users ) <= 0:
             raise BotUserError( 'Found no active users except You... :\'(' )
@@ -168,51 +151,10 @@ def rain( bot, update ):
 
         bot.send_message( chat_id = chat_id,
                           text = f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to '
-                          f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} {Configuration.COIN_SYMBOL} '
-                          f'received per user.' )
+                          f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} '
+                          f'{Configuration.COIN_SYMBOL} received per user.' )
 
     except BotUserError as e:
         bot.send_message( chat_id = chat_id, text = e.message )
     except ValueError:
         bot.send_message( chat_id = chat_id, text = messages.GENERIC_ERROR )
-
-
-def activity_tracker( bot, update ):
-    global active_users
-    chat_id = update.message.chat_id
-    now = datetime.now()
-    current_time = datetime.timestamp( now )
-    user = commonhelper.get_username( update )
-
-    if active_users is None:
-        active_users = { chat_id: { user: current_time } }
-    elif chat_id not in active_users:
-        active_users.update( { chat_id: { user: current_time } } )
-    else:
-        if user not in active_users[ chat_id ]:
-            active_users[ chat_id ].update( { user: current_time } )
-        else:
-            active_users[ chat_id ][ user ] = current_time
-
-    logger.info( f'@{user} spoke @{chat_id} at {active_users[ chat_id ][ user ]}.' )
-
-
-def get_eligible_active_users( update, user ):
-    global active_users
-    eligible_users = [ ]
-    chat_id = update.message.chat_id
-
-    if active_users is not None and active_users[ chat_id ] is not None:
-        for active_user in active_users[ chat_id ]:
-            now = datetime.now()
-            current_time = datetime.timestamp( now )
-
-            if current_time - active_users[ chat_id ][ active_user ] <= Configuration.CHAT_ACTIVITY_TIME \
-                    and active_user != user:
-                eligible_users.append( active_user )
-
-    if len( eligible_users ) is 0:
-        logger.info(
-            f'No eligible users for receiving rain in chatId: {chat_id} found from active users: {active_users}' )
-
-    return eligible_users

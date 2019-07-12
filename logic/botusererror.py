@@ -1,6 +1,6 @@
-class BotUserError(Exception):
-    def __init__(self, m):
+class BotUserError( Exception ):
+    def __init__( self, m ):
         self.message = m
 
-    def __str__(self):
+    def __str__( self ):
         return self.message
