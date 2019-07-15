@@ -6,8 +6,6 @@ from datetime import datetime
 from requests import Session
 from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 
-logger = logging.getLogger( __name__ )
-
 global coin_update_time
 global coin_data
 coin_update_time = None
@@ -53,7 +51,7 @@ def update_coin_data_cache():
         now = datetime.now()
         coin_update_time = datetime.timestamp( now )
 
-        logger.info( 'Coin data cache updated' )
-        logger.info( coin_data )
+        logging.info( 'Coin data cache updated' )
+        logging.info( coin_data )
     except (ConnectionError, Timeout, TooManyRedirects) as e:
-        logger.error( e )
+        logging.error( e )

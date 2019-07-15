@@ -1,12 +1,10 @@
-from logic import commandprocessor, messages
 import logging
+from logic import commandprocessor, messages
 
 from logic.activitytracker import ActivityTracker
 from logic.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
 from logic.helpers import commonhelper, markethelper
-
-logger = logging.getLogger( __name__ )
 
 
 def commands( bot, update ):
@@ -25,7 +23,7 @@ def deposit( bot, update ):
                           text = f'@{user}, Your depositing address is: {deposit_address}' )
     except BotUserError as e:
         bot.send_message( chat_id = update.message.chat_id, text = e.message )
-        logger.info( e )
+        logging.info( e )
 
 
 def tip( bot, update ):
@@ -146,7 +144,7 @@ def rain( bot, update ):
 
         for eligible_user in eligible_users:
             commandprocessor.run_wallet_command( [ 'move', user, eligible_user, amount_per_user ] )
-            logger.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
+            logging.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
         bot.send_message( chat_id = chat_id,

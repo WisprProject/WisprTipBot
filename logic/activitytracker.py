@@ -6,8 +6,6 @@ from datetime import datetime
 from logic.helpers import commonhelper
 from logic.helpers.configuration import Configuration
 
-logger = logging.getLogger( __name__ )
-
 
 class ActivityTracker:
     active_users_cache = None
@@ -17,7 +15,7 @@ class ActivityTracker:
 
         with connection:
             active_users = database.fetch_result( connection, statements.SELECT_ALL_ACTIVITY_WITH_USERNAMES )
-            logger.debug( f'Active users fetched.' )
+            logging.debug( f'Active users fetched.' )
 
             if self.active_users_cache is None and active_users is not None:
                 self.active_users_cache = { }
@@ -30,7 +28,7 @@ class ActivityTracker:
                     else:
                         self.active_users_cache[ chat_id ].update( { user_id: activity_timestamp } )
 
-                logger.info( 'Active users cache loaded.' )
+                logging.info( 'Active users cache loaded.' )
 
     def track_activity( self, bot, update ):
         chat_id = update.message.chat_id
@@ -55,7 +53,7 @@ class ActivityTracker:
             else:
                 self.active_users_cache[ chat_id ][ user ] = current_time
 
-        logger.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
+        logging.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
 
     def get_current_active_users( self, update, user ):
         eligible_users = [ ]
@@ -71,7 +69,7 @@ class ActivityTracker:
                     eligible_users.append( active_user )
 
         if len( eligible_users ) is 0:
-            logger.info( f'No eligible users for receiving rain in chatId: {chat_id} '
+            logging.info( f'No eligible users for receiving rain in chatId: {chat_id} '
                          f'found from active users: {self.active_users_cache}' )
 
         return eligible_users
