@@ -63,7 +63,13 @@ def tip( bot, update ):
 def balance( bot, update ):
     try:
         user = commonhelper.get_username( update )
-        fiat_price = markethelper.get_fiat_price()
+        fiat_price = 0
+
+        try:
+            fiat_price = markethelper.get_fiat_price()
+        except BotUserError as e:
+            logging.warning( e.message )
+
         user_balance = commonhelper.get_user_balance( user )
         fiat_balance = user_balance * fiat_price
         fiat_balance = round( fiat_balance, 3 )
@@ -74,6 +80,8 @@ def balance( bot, update ):
                 message = f'@{user}, Your current balance is almost empty, still some dust can be found.'
             else:
                 message = f'@{user}, Your current balance is empty.'
+        elif fiat_balance == 0:
+            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL}'
         else:
             message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL} ' \
                 f'≈  $ {fiat_balance}'
@@ -111,14 +119,17 @@ def withdraw( bot, update ):
 
 
 def market( bot, update ):
-    fiat_price = markethelper.get_fiat_price()
-    market_cap = markethelper.get_market_cap()
-    fiat_price = round( fiat_price, 4 )
-    market_cap = round( market_cap, 2 )
-    bot.send_message( chat_id = update.message.chat_id,
-                      text = f'The current market cap of {Configuration.COIN_SYMBOL} is $ {market_cap}.\n'
-                      f'1 {Configuration.COIN_SYMBOL} is valued at $ {fiat_price}.' )
-
+    chat_id = update.message.chat_id
+    try:
+        fiat_price = markethelper.get_fiat_price()
+        market_cap = markethelper.get_market_cap()
+        fiat_price = round( fiat_price, 4 )
+        market_cap = round( market_cap, 2 )
+        bot.send_message( chat_id = chat_id,
+                          text = f'The current market cap of {Configuration.COIN_SYMBOL} is $ {market_cap}.\n'
+                          f'1 {Configuration.COIN_SYMBOL} is valued at $ {fiat_price}.' )
+    except BotUserError as e:
+        bot.send_message( chat_id=chat_id, text=e.message )
 
 def rain( bot, update ):
     chat_id = update.message.chat_id

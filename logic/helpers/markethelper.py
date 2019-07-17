@@ -1,6 +1,7 @@
 import json
 import logging
 
+from logic.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
 from datetime import datetime
 from requests import Session
@@ -47,6 +48,8 @@ def update_coin_data_cache():
         global coin_update_time
         response = session.get( url, params=parameters )
         data = json.loads( response.text )
+        if 'error_code' in response.text and data[ 'status' ][ 'error_code' ] == 400:
+            raise BotUserError( f'No market info available for {Configuration.COIN_SYMBOL}.' )
         coin_data = data[ 'data' ][ Configuration.COIN_SYMBOL ]
         now = datetime.now()
         coin_update_time = datetime.timestamp( now )
