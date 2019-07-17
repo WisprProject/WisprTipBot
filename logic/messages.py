@@ -28,6 +28,6 @@ WITHDRAW_ERROR = 'You have to specify the withdrawal address and the amount You 
 RAIN_ERROR = 'You have to specify the amount that You want to rain.\n' \
              '/rain <amount>'
 
-SET_USERNAME = 'Please set the telegram username in Your profile settings!'
+SET_USERNAME = '<UnknownUser>, please set the telegram username in Your profile settings!'
 
 GENERIC_ERROR = 'An error occurred during handling the command. Contact the bot support.'

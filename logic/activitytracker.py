@@ -1,5 +1,6 @@
 import logging
 
+from logic.botusererror import BotUserError
 from db import database
 from db import statements
 from datetime import datetime
@@ -31,29 +32,32 @@ class ActivityTracker:
                 logging.info( 'Active users cache loaded.' )
 
     def track_activity( self, bot, update ):
-        chat_id = update.message.chat_id
-        now = datetime.now()
-        current_time = datetime.timestamp( now )
-        user = commonhelper.get_username( update )
-        connection = database.create_connection()
+        try:
+            chat_id = update.message.chat_id
+            now = datetime.now()
+            current_time = datetime.timestamp( now )
+            user = commonhelper.get_username( update )
+            connection = database.create_connection()
 
-        with connection:
-            user_id = database.fetch_result( connection, statements.SELECT_TELEGRAM_USER_ID_BY_NAME, (user,) )
+            with connection:
+                user_id = database.fetch_result( connection, statements.SELECT_TELEGRAM_USER_ID_BY_NAME, (user,) )
 
-            if user_id is None:
-                user_id = database.execute_query( connection, statements.INSERT_TELEGRAM_USER, (user,) )
+                if user_id is None:
+                    user_id = database.execute_query( connection, statements.INSERT_TELEGRAM_USER, (user,) )
 
-            database.execute_query( connection, statements.UPDATE_USER_ACTIVITY, (user_id, chat_id, current_time,) )
+                database.execute_query( connection, statements.UPDATE_USER_ACTIVITY, (user_id, chat_id, current_time,) )
 
-        if chat_id not in self.active_users_cache:
-            self.active_users_cache.update( { chat_id: { user: current_time } } )
-        else:
-            if user not in self.active_users_cache[ chat_id ]:
-                self.active_users_cache[ chat_id ].update( { user: current_time } )
+            if chat_id not in self.active_users_cache:
+                self.active_users_cache.update( { chat_id: { user: current_time } } )
             else:
-                self.active_users_cache[ chat_id ][ user ] = current_time
+                if user not in self.active_users_cache[ chat_id ]:
+                    self.active_users_cache[ chat_id ].update( { user: current_time } )
+                else:
+                    self.active_users_cache[ chat_id ][ user ] = current_time
 
-        logging.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
+            logging.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
+        except BotUserError as e:
+            logging.info( e )
 
     def get_current_active_users( self, update, user ):
         eligible_users = [ ]
