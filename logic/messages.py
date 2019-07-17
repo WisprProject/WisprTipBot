@@ -10,7 +10,7 @@ COMMANDS = 'Initiating commands /tip, /withdraw and /rain have a specific format
            'use them like so:\n\n' \
            'Parameters:\n' \
            '<user> = target user to tip\n' \
-           '<amount> = amount of WSP to utilise\n' \
+           '<amount> = amount of coins to utilise\n' \
            '<address> = address to withdraw to\n\n' \
            'Tipping format:\n' \
            '/tip <user> <amount>\n\n' \
