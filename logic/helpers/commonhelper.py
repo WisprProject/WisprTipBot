@@ -40,14 +40,14 @@ def get_validated_amount( amount, user ):
         raise BotUserError( f'´{amount}´ is not a valid amount' )
 
     if amount <= 0:
-        raise BotUserError( f'Amount ´{amount}´ has to be bigger than 0' )
+        raise BotUserError( f'Amount has to be bigger than 0' )
 
     if amount < 0.1:
-        raise BotUserError( f'Amount ´{amount}´ has to be greater ot equal to 0.1' )
+        raise BotUserError( f'Amount has to be greater or equal to 0.1' )
 
     user_balance = get_user_balance( user )
 
     if user_balance < amount:
-        raise BotUserError( f'@{user} You have insufficient funds.' )
+        raise BotUserError( f'@{user}, You have insufficient funds.' )
 
     return str( amount )
