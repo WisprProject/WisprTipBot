@@ -6,7 +6,7 @@ class Command:
         self.activity_tracker = activity_tracker
         self.command_to_run = command_to_run
 
-    def run( self, bot, update ):
+    def __call__( self, bot, update ):
         if self.activity_tracker is not None:
             self.activity_tracker.track_activity( bot, update )
 

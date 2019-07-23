@@ -20,15 +20,15 @@ def main():
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler( MessageHandler( ~ Filters.command, activity_tracker.track_activity ) )
-    dispatcher.add_handler( CommandHandler( 'commands', Command( commands.commands ).run ) )
-    dispatcher.add_handler( CommandHandler( 'start', Command( commands.help ).run ) )
-    dispatcher.add_handler( CommandHandler( 'help', Command( commands.help ).run ) )
-    dispatcher.add_handler( CommandHandler( 'balance', Command( commands.balance ).run ) )
-    dispatcher.add_handler( CommandHandler( 'deposit', Command( commands.deposit ).run ) )
-    dispatcher.add_handler( CommandHandler( 'withdraw', Command( commands.withdraw ).run ) )
-    dispatcher.add_handler( CommandHandler( 'market', Command( commands.market, activity_tracker ).run ) )
-    dispatcher.add_handler( CommandHandler( 'tip', Command( commands.tip, activity_tracker ).run ) )
-    dispatcher.add_handler( CommandHandler( 'rain', Command( commands.rain, activity_tracker ).run ) )
+    dispatcher.add_handler( CommandHandler( 'commands', Command( commands.commands ) ) )
+    dispatcher.add_handler( CommandHandler( 'start', Command( commands.help ) ) )
+    dispatcher.add_handler( CommandHandler( 'help', Command( commands.help ) ) )
+    dispatcher.add_handler( CommandHandler( 'balance', Command( commands.balance ) ) )
+    dispatcher.add_handler( CommandHandler( 'deposit', Command( commands.deposit ) ) )
+    dispatcher.add_handler( CommandHandler( 'withdraw', Command( commands.withdraw ) ) )
+    dispatcher.add_handler( CommandHandler( 'market', Command( commands.market, activity_tracker ) ) )
+    dispatcher.add_handler( CommandHandler( 'tip', Command( commands.tip, activity_tracker ) ) )
+    dispatcher.add_handler( CommandHandler( 'rain', Command( commands.rain, activity_tracker ) ) )
 
     updater.start_polling()
 
