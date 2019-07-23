@@ -10,4 +10,6 @@ class Command:
         if self.activity_tracker is not None:
             self.activity_tracker.track_activity( bot, update )
 
-        return self.command_to_run( bot, update )
+        command_message = self.command_to_run( update )
+
+        bot.send_message( chat_id = update.message.chat_id, text = command_message )

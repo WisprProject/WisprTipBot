@@ -7,27 +7,25 @@ from logic.helpers.configuration import Configuration
 from logic.helpers import commonhelper, markethelper
 
 
-def commands( bot, update ):
-    bot.send_message( chat_id = update.message.chat_id, text = messages.COMMANDS )
+def commands( update ):
+    return messages.COMMANDS
 
 
-def help( bot, update ):
-    bot.send_message( chat_id = update.message.chat_id, text = messages.HELP )
+def help( update ):
+    return messages.HELP
 
 
-def deposit( bot, update ):
+def deposit( update ):
     try:
         user = commonhelper.get_username( update )
         deposit_address = clientcommandprocessor.run_client_command( [ 'getaccountaddress', user ] )
-        bot.send_message( chat_id = update.message.chat_id,
-                          text = f'@{user}, Your depositing address is: {deposit_address}' )
+        return f'@{user}, Your depositing address is: {deposit_address}'
     except BotUserError as e:
-        bot.send_message( chat_id = update.message.chat_id, text = e.message )
         logging.info( e )
+        return e.message
 
 
-def tip( bot, update ):
-    chat_id = update.message.chat_id
+def tip( update ):
     arguments = update.message.text.split( ' ' )
     try:
         if len( arguments ) < 3:
@@ -36,7 +34,6 @@ def tip( bot, update ):
         user = commonhelper.get_username( update )
         target = arguments[ 1 ]
         amount = arguments[ 2 ]
-        machine = '@' + Configuration.TELEGRAM_BOT_NAME
 
         if '@' not in target:
             raise BotUserError( f'That user ´{target}´ is not applicable.' )
@@ -48,19 +45,17 @@ def tip( bot, update ):
             raise BotUserError( 'You can not tip Yourself.' )
 
         if clientcommandprocessor.run_client_command( [ 'move', user, target, amount ] ):
-            bot.send_message( chat_id = chat_id,
-                              text = f'@{user} tipped @{target} of {amount} {Configuration.COIN_SYMBOL}' )
+            return f'@{user} tipped @{target} of {amount} {Configuration.COIN_SYMBOL}'
         else:
             raise BotUserError( messages.GENERIC_ERROR )
 
     except BotUserError as e:
-        bot.send_message( chat_id = chat_id, text = e.message )
+        return e.message
     except ValueError:
-        bot.send_message( chat_id = chat_id,
-                          text = messages.GENERIC_ERROR )
+        return messages.GENERIC_ERROR
 
 
-def balance( bot, update ):
+def balance( update ):
     try:
         user = commonhelper.get_username( update )
         fiat_price = 0
@@ -86,14 +81,13 @@ def balance( bot, update ):
             message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL} ' \
                 f'≈  $ {fiat_balance}'
 
-        bot.send_message( chat_id = update.message.chat_id, text = message )
+        return message
 
     except BotUserError as e:
-        bot.send_message( chat_id = update.message.chat_id, text = e.message )
+        return e.message
 
 
-def withdraw( bot, update ):
-    chat_id = update.message.chat_id
+def withdraw( update ):
     arguments = update.message.text.split( ' ' )
     try:
         user = commonhelper.get_username( update )
@@ -107,32 +101,27 @@ def withdraw( bot, update ):
         amount = commonhelper.get_validated_amount( amount, user )
 
         clientcommandprocessor.run_client_command( [ 'sendfrom', user, address, amount ] )
-        bot.send_message( chat_id = chat_id,
-                          text = f'@{user} has successfully withdrawn to address: {address} of {amount} '
-                          f'{Configuration.COIN_SYMBOL}.' )
+        return f'@{user} has successfully withdrawn to address: {address} of {amount} {Configuration.COIN_SYMBOL}.'
 
     except BotUserError as e:
-        bot.send_message( chat_id = chat_id, text = e.message )
+        return e.message
     except ValueError:
-        bot.send_message( chat_id = chat_id,
-                          text = messages.GENERIC_ERROR )
+        return messages.GENERIC_ERROR
 
 
-def market( bot, update ):
-    chat_id = update.message.chat_id
+def market( update ):
     try:
         fiat_price = markethelper.get_fiat_price()
         market_cap = markethelper.get_market_cap()
         fiat_price = round( fiat_price, 4 )
         market_cap = round( market_cap, 2 )
-        bot.send_message( chat_id = chat_id,
-                          text = f'The current market cap of {Configuration.COIN_SYMBOL} is $ {market_cap}.\n'
-                          f'1 {Configuration.COIN_SYMBOL} is valued at $ {fiat_price}.' )
-    except BotUserError as e:
-        bot.send_message( chat_id=chat_id, text=e.message )
 
-def rain( bot, update ):
-    chat_id = update.message.chat_id
+        return f'The current market cap of {Configuration.COIN_SYMBOL} is $ {market_cap}.\n' \
+               f'1 {Configuration.COIN_SYMBOL} is valued at $ {fiat_price}.'
+    except BotUserError as e:
+        return e.message
+
+def rain( update ):
     arguments = update.message.text.split( ' ' )
     try:
         user = commonhelper.get_username( update )
@@ -158,12 +147,11 @@ def rain( bot, update ):
             logging.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
-        bot.send_message( chat_id = chat_id,
-                          text = f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to '
-                          f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} '
-                          f'{Configuration.COIN_SYMBOL} received per user.' )
+        return f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to ' \
+                          f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} ' \
+                          f'{Configuration.COIN_SYMBOL} received per user.'
 
     except BotUserError as e:
-        bot.send_message( chat_id = chat_id, text = e.message )
+        return e.message
     except ValueError:
-        bot.send_message( chat_id = chat_id, text = messages.GENERIC_ERROR )
+        return messages.GENERIC_ERROR
