@@ -15,8 +15,7 @@
 
 ## Setup
 
-* Download the git
-`git clone https://github.com/TUXCMD/wisprtip-bot`
+* Download the repo from git
 
 * Rename the config.json.example to config.json and change the values in it to match Your needs.
 #### Configuration
@@ -34,7 +33,8 @@ Time is in seconds and default value 28800 equals 8h. So if user was last active
  
 or use some proper process manager to run the python3 script, just running it as a background process with the & on the end worked for 1.5 years- 0 downtime ;)
 
-*  Initiate the bot by inviting it to a chat or via PM and start the bot. To find out the format related to tip others and withdrawal of funds use `/commands`.
+* Initiate the bot by inviting it to a chat or via PM and start the bot. To find out the format related to tip others and withdrawal of funds use `/commands`.
+* For rain to work as intended, You have to disable privacy mode @botFather. This will enable user message tracking.
 
 ### Setting up the bot as so still leaves the wallet unencrypted, so please go to extra measures to provide extra security. Make sure to have SSH encryption on whatever device/droplet you run it on. 
 
