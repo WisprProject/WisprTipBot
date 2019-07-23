@@ -1,8 +1,8 @@
 import logging
-from logic import commandprocessor, messages
+from logic.common import messages, clientcommandprocessor
 
 from logic.activitytracker import ActivityTracker
-from logic.botusererror import BotUserError
+from logic.common.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
 from logic.helpers import commonhelper, markethelper
 
@@ -18,7 +18,7 @@ def help( bot, update ):
 def deposit( bot, update ):
     try:
         user = commonhelper.get_username( update )
-        deposit_address = commandprocessor.run_wallet_command( [ 'getaccountaddress', user ] )
+        deposit_address = clientcommandprocessor.run_client_command( [ 'getaccountaddress', user ] )
         bot.send_message( chat_id = update.message.chat_id,
                           text = f'@{user}, Your depositing address is: {deposit_address}' )
     except BotUserError as e:
@@ -47,7 +47,7 @@ def tip( bot, update ):
         if target == user:
             raise BotUserError( 'You can not tip Yourself.' )
 
-        if commandprocessor.run_wallet_command( [ 'move', user, target, amount ] ):
+        if clientcommandprocessor.run_client_command( [ 'move', user, target, amount ] ):
             bot.send_message( chat_id = chat_id,
                               text = f'@{user} tipped @{target} of {amount} {Configuration.COIN_SYMBOL}' )
         else:
@@ -106,7 +106,7 @@ def withdraw( bot, update ):
         amount = arguments[ 2 ]
         amount = commonhelper.get_validated_amount( amount, user )
 
-        commandprocessor.run_wallet_command( [ 'sendfrom', user, address, amount ] )
+        clientcommandprocessor.run_client_command( [ 'sendfrom', user, address, amount ] )
         bot.send_message( chat_id = chat_id,
                           text = f'@{user} has successfully withdrawn to address: {address} of {amount} '
                           f'{Configuration.COIN_SYMBOL}.' )
@@ -154,7 +154,7 @@ def rain( bot, update ):
         at_users = '|'
 
         for eligible_user in eligible_users:
-            commandprocessor.run_wallet_command( [ 'move', user, eligible_user, amount_per_user ] )
+            clientcommandprocessor.run_client_command( [ 'move', user, eligible_user, amount_per_user ] )
             logging.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 

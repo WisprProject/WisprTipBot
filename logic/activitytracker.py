@@ -1,6 +1,6 @@
 import logging
 
-from logic.botusererror import BotUserError
+from logic.common.botusererror import BotUserError
 from db import database
 from db import statements
 from datetime import datetime

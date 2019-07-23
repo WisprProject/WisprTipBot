@@ -6,7 +6,7 @@ from logic.helpers.configuration import Configuration
 CLI_LOCATION = Configuration.CLI_LOCATION
 
 
-def run_wallet_command( command_attributes, value_to_return=None ):
+def run_client_command( command_attributes, value_to_return=None ):
     try:
         call = subprocess.Popen( [ CLI_LOCATION ] + command_attributes, stdout=subprocess.PIPE )
         result, _ = call.communicate()

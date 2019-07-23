@@ -1,7 +1,7 @@
 import json
 import logging
 
-from logic.botusererror import BotUserError
+from logic.common.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
 from datetime import datetime
 from requests import Session
