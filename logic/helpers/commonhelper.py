@@ -50,4 +50,4 @@ def get_validated_amount( amount, user ):
     if user_balance < amount:
         raise BotUserError( f'@{user}, You have insufficient funds.' )
 
-    return str( amount )
+    return str( round( amount, 8 ) )
