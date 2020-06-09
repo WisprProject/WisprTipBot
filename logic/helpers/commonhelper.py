@@ -14,8 +14,7 @@ def get_username( update ):
 
 def get_validated_address( address ):
     if len( address ) == 34:
-        command = [ 'validateaddress', address ]
-        if clientcommandprocessor.run_client_command( command, 'isvalid' ):
+        if clientcommandprocessor.run_client_command( 'validateaddress', 'isvalid', address ):
             return address
 
     raise BotUserError( f'´{address}´ is not a valid address.' )
@@ -23,8 +22,7 @@ def get_validated_address( address ):
 
 def get_user_balance( user ):
     try:
-        command = [ 'getbalance', user ]
-        user_balance = clientcommandprocessor.run_client_command( command )
+        user_balance = clientcommandprocessor.run_client_command( 'getbalance', None, user )
         return float( user_balance )
     except BotUserError:
         raise BotUserError
@@ -50,4 +48,4 @@ def get_validated_amount( amount, user ):
     if user_balance < amount:
         raise BotUserError( f'@{user}, You have insufficient funds.' )
 
-    return str( round( amount, 8 ) )
+    return round( amount, 8 )

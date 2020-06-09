@@ -8,12 +8,20 @@
 *  `apt-get install python3`
 *  `apt-get install python3-pip`
 *  `pip3 install python-telegram-bot --upgrade`
+*  `pip3 install python-bitcoinrpc`
 
 * Setup ufw firewall to only allow the connectivity between the Wispr Wallet * The network, all other ports can be forced to be down.
 
 * In order to run the tip-bot effectively, a Bitcoin-core based client is needed. For this git Wispr-cli is used , but any major alternate crypto-currency client could easily be incorporated. 
 
 ## Setup
+
+* Add RPC configuration to Your wallet conf (wispr.conf) file:
+
+    * `rpcuser=YOUR-RPC-USERNAME` 
+    * `rpcpassword=YOUR-RPC-PASSWORD`
+    * `rpcallowip=YOUR-RPC-IP`
+    * `pcport=YOUR-RPC-PORT`
 
 * Download the repo from git
 

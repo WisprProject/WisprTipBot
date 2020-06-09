@@ -18,7 +18,7 @@ def help( update ):
 def deposit( update ):
     try:
         user = commonhelper.get_username( update )
-        deposit_address = clientcommandprocessor.run_client_command( [ 'getaccountaddress', user ] )
+        deposit_address = clientcommandprocessor.run_client_command( 'getaccountaddress', None, user )
         return f'@{user}, Your depositing address is: {deposit_address}'
     except BotUserError as e:
         logging.info( e )
@@ -44,7 +44,7 @@ def tip( update ):
         if target == user:
             raise BotUserError( 'You can not tip Yourself.' )
 
-        if clientcommandprocessor.run_client_command( [ 'move', user, target, amount ] ):
+        if clientcommandprocessor.run_client_command( 'move', None, user, target, amount ):
             return f'@{user} tipped @{target} of {amount} {Configuration.COIN_SYMBOL}'
         else:
             raise BotUserError( messages.GENERIC_ERROR )
@@ -79,7 +79,7 @@ def balance( update ):
             message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL}'
         else:
             message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL} ' \
-                f'≈  $ {fiat_balance}'
+                      f'≈  $ {fiat_balance}'
 
         return message
 
@@ -100,7 +100,7 @@ def withdraw( update ):
         amount = arguments[ 2 ]
         amount = commonhelper.get_validated_amount( amount, user )
 
-        clientcommandprocessor.run_client_command( [ 'sendfrom', user, address, amount ] )
+        clientcommandprocessor.run_client_command( 'sendfrom', None, user, address, amount )
         return f'@{user} has successfully withdrawn to address: {address} of {amount} {Configuration.COIN_SYMBOL}.'
 
     except BotUserError as e:
@@ -121,6 +121,7 @@ def market( update ):
     except BotUserError as e:
         return e.message
 
+
 def rain( update ):
     arguments = update.message.text.split( ' ' )
     try:
@@ -139,11 +140,11 @@ def rain( update ):
 
         eligible_users.append( Configuration.TELEGRAM_BOT_NAME )  # Give some to the bot
         amount_per_user = float( amount_total ) / len( eligible_users )
-        amount_per_user = str( amount_per_user )
+        amount_per_user = amount_per_user
         at_users = '|'
 
         for eligible_user in eligible_users:
-            clientcommandprocessor.run_client_command( [ 'move', user, eligible_user, amount_per_user ] )
+            clientcommandprocessor.run_client_command( 'move', None, user, eligible_user, amount_per_user )
             logging.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 

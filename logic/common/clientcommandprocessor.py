@@ -1,20 +1,30 @@
-import json
-import subprocess
+import logging
+
+from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 from logic.helpers.configuration import Configuration
 
-CLI_LOCATION = Configuration.CLI_LOCATION
+RPC_CONFIGURATION = Configuration.RPC_CONFIGURATION
 
 
-def run_client_command( command_attributes, value_to_return=None ):
+def run_client_command( command, value_to_return, *command_arguments ):
+    logging.info(
+        f"Running command: {command}, with arguments: {command_arguments} "
+        f"and getting value from result: {value_to_return}." )
+
     try:
-        call = subprocess.Popen( [ CLI_LOCATION ] + command_attributes, stdout=subprocess.PIPE )
-        result, _ = call.communicate()
-        if value_to_return is None:
-            return str( result.decode( "utf-8" ) ).strip()
-        else:
-            data = json.loads( result )
-            return data[ value_to_return ]
+        rpc = AuthServiceProxy(
+            "http://" + RPC_CONFIGURATION[ "username" ] + ":" + RPC_CONFIGURATION[ "password" ] + "@"
+            + RPC_CONFIGURATION[ "host" ] + ":" + RPC_CONFIGURATION[ "port" ] )
 
-    except ValueError:
-        raise ValueError
+        rpc_function_to_call = getattr( rpc, command )
+
+        result = rpc_function_to_call( *command_arguments )
+
+        if value_to_return is None:
+            return result
+        else:
+            return result[ value_to_return ]
+
+    except JSONRPCException as e:
+        logging.error( f"Failed to get a successful result for command: {command}. {e.message}" )
