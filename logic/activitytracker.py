@@ -18,6 +18,9 @@ class ActivityTracker:
             logging.debug( f'Active users fetched.' )
 
             if self.active_users_cache is None and active_users is not None:
+                if isinstance( active_users[ 0 ], str ):
+                    active_users = { active_users }
+
                 self.active_users_cache = { }
                 for active_user in active_users:
                     user_id = active_user[ 0 ]
