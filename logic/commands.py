@@ -147,7 +147,7 @@ def rain( update ):
 
         for eligible_user in eligible_users:
             clientcommandprocessor.run_client_command( 'move', None, user, eligible_user, amount_per_user )
-            logger.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
+            logger.info( f'rain amount ´{amount_total}´ split between {len( eligible_users )} users.' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
         return f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to ' \
