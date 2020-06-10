@@ -4,11 +4,12 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
 from logic.helpers.configuration import Configuration
 
+logger = logging.getLogger( __name__ )
 RPC_CONFIGURATION = Configuration.RPC_CONFIGURATION
 
 
 def run_client_command( command, value_to_return, *command_arguments ):
-    logging.info(
+    logger.info(
         f"Running command: {command}, with arguments: {command_arguments} "
         f"and getting value from result: {value_to_return}." )
 
@@ -27,4 +28,4 @@ def run_client_command( command, value_to_return, *command_arguments ):
             return result[ value_to_return ]
 
     except JSONRPCException as e:
-        logging.error( f"Failed to get a successful result for command: {command}. {e.message}" )
+        logger.error( f"Failed to get a successful result for command: {command}. {e.message}" )

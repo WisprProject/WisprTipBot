@@ -3,6 +3,8 @@ import os
 import sqlite3
 from sqlite3 import Error
 
+logger = logging.getLogger( __name__ )
+
 
 def create_connection():
     database = 'out/tip_bot.db'
@@ -10,12 +12,12 @@ def create_connection():
     try:
         os.makedirs( os.path.dirname( database ), exist_ok = True )
         connection = sqlite3.connect( database )
-        logging.info( 'Connected to the database.' )
-        logging.debug( f'Db: ´{database}´' )
+        logger.info( 'Connected to the database.' )
+        logger.debug( f'Db: ´{database}´' )
 
         return connection
     except Error as e:
-        logging.error( e )
+        logger.error( e )
 
     return None
 
@@ -25,30 +27,30 @@ def close_connection( connection ):
         if connection:
             connection.close()
     except Error as e:
-        logging.error( e )
+        logger.error( e )
 
 
 def init_database( connection ):
     try:
         for statement in open( 'resources/schema.sql' ).read().split( '\n\n' ):
             connection.execute( statement )
-            logging.debug( f'Table created:\n{statement}' )
+            logger.debug( f'Table created:\n{statement}' )
 
-        logging.info( 'Database tables ready.' )
+        logger.info( 'Database tables ready.' )
     except Error as e:
-        logging.error( e )
+        logger.error( e )
 
 
 def execute_query( connection, query, parameters = None ):
-    logging.debug( f'SQL: {query}. With parameters: ´{parameters}´' )
+    logger.debug( f'SQL: {query}. With parameters: ´{parameters}´' )
     try:
         cursor = connection.cursor()
         cursor.execute( query, parameters )
-        logging.info( 'Query execution successful.' )
+        logger.info( 'Query execution successful.' )
 
         return cursor.lastrowid
     except Error as e:
-        logging.error( e )
+        logger.error( e )
 
 
 def fetch_result( connection, query, parameters = None ):
@@ -61,7 +63,7 @@ def fetch_result( connection, query, parameters = None ):
             cursor.execute( query, parameters )
 
         result = cursor.fetchall()
-        logging.debug( f'Fetch result: {result}' )
+        logger.debug( f'Fetch result: {result}' )
 
         if len( result ) == 1:
             if len( result[ 0 ] ) == 1:
@@ -73,4 +75,4 @@ def fetch_result( connection, query, parameters = None ):
         return None
 
     except Error as e:
-        logging.error( e )
+        logger.error( e )

@@ -1,12 +1,15 @@
 import logic.helpers.loggersetup
 import logging
 
+from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+
 from db import database
 from logic import commands
 from logic.activitytracker import ActivityTracker
 from logic.command import Command
 from logic.helpers.configuration import Configuration
-from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
+
+logger = logging.getLogger( __name__ )
 
 
 def main():
@@ -32,7 +35,7 @@ def main():
 
     updater.start_polling()
 
-    logging.info( 'Bot started.' )
+    logger.info( 'Bot started.' )
 
 
 main()

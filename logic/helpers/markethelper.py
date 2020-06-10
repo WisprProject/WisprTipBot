@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 from logic.common.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
 
+logger = logging.getLogger( __name__ )
 global coin_update_time
 global coin_data
 coin_update_time = None
@@ -55,7 +56,7 @@ def update_coin_data_cache():
         now = datetime.now()
         coin_update_time = datetime.timestamp( now )
 
-        logging.info( 'Coin data cache updated' )
-        logging.info( coin_data )
+        logger.info( 'Coin market data cache updated.' )
+        logger.debug( coin_data )
     except (ConnectionError, Timeout, TooManyRedirects) as e:
-        logging.error( e )
+        logger.error( e )

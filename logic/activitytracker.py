@@ -6,6 +6,8 @@ from logic.common.botusererror import BotUserError
 from logic.helpers import commonhelper
 from logic.helpers.configuration import Configuration
 
+logger = logging.getLogger( __name__ )
+
 
 class ActivityTracker:
     active_users_cache = None
@@ -15,7 +17,7 @@ class ActivityTracker:
 
         with connection:
             active_users = database.fetch_result( connection, statements.SELECT_ALL_ACTIVITY_WITH_USERNAMES )
-            logging.debug( f'Active users fetched.' )
+            logger.debug( f'Active users fetched.' )
 
             if self.active_users_cache is None and active_users is not None:
                 if isinstance( active_users[ 0 ], str ):
@@ -31,7 +33,7 @@ class ActivityTracker:
                     else:
                         self.active_users_cache[ chat_id ].update( { user_id: activity_timestamp } )
 
-                logging.info( 'Active users cache loaded.' )
+                logger.info( 'Active users cache loaded.' )
 
     def track_activity( self, bot, update ):
         try:
@@ -57,9 +59,9 @@ class ActivityTracker:
                 else:
                     self.active_users_cache[ chat_id ][ user ] = current_time
 
-            logging.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
+            logger.info( f'@{user} spoke @{chat_id} at {self.active_users_cache[ chat_id ][ user ]}.' )
         except BotUserError as e:
-            logging.info( e )
+            logger.info( e )
 
     def get_current_active_users( self, update, user ):
         eligible_users = [ ]
@@ -70,12 +72,13 @@ class ActivityTracker:
                 now = datetime.now()
                 current_time = datetime.timestamp( now )
 
-                if current_time - self.active_users_cache[ chat_id ][ active_user ] <= Configuration.CHAT_ACTIVITY_TIME \
+                if current_time - self.active_users_cache[ chat_id ][ active_user ] <= \
+                        Configuration.CHAT_ACTIVITY_TIME \
                         and active_user != user:
                     eligible_users.append( active_user )
 
         if len( eligible_users ) is 0:
-            logging.info( f'No eligible users for receiving rain in chatId: {chat_id} '
+            logger.info( f'No eligible users for receiving rain in chatId: {chat_id} '
                          f'found from active users: {self.active_users_cache}' )
 
         return eligible_users

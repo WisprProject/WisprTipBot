@@ -6,6 +6,8 @@ from logic.common.botusererror import BotUserError
 from logic.helpers import commonhelper, markethelper
 from logic.helpers.configuration import Configuration
 
+logger = logging.getLogger( __name__ )
+
 
 def commands( update ):
     return messages.COMMANDS
@@ -21,7 +23,7 @@ def deposit( update ):
         deposit_address = clientcommandprocessor.run_client_command( 'getaccountaddress', None, user )
         return f'@{user}, Your depositing address is: {deposit_address}'
     except BotUserError as e:
-        logging.info( e )
+        logger.info( e )
         return e.message
 
 
@@ -63,7 +65,7 @@ def balance( update ):
         try:
             fiat_price = markethelper.get_fiat_price()
         except BotUserError as e:
-            logging.warning( e.message )
+            logger.warning( e.message )
 
         user_balance = commonhelper.get_user_balance( user )
         fiat_balance = user_balance * fiat_price
@@ -145,7 +147,7 @@ def rain( update ):
 
         for eligible_user in eligible_users:
             clientcommandprocessor.run_client_command( 'move', None, user, eligible_user, amount_per_user )
-            logging.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
+            logger.info( f'rain amount ´{amount_per_user}´ sent to {eligible_user}' )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
         return f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to ' \
