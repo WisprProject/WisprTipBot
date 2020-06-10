@@ -16,7 +16,7 @@ def main():
         database.init_database( connection )
 
     activity_tracker = ActivityTracker()
-    updater = Updater( token=Configuration.TELEGRAM_BOT_TOKEN, request_kwargs=None )
+    updater = Updater( token = Configuration.TELEGRAM_BOT_TOKEN, request_kwargs = None )
     dispatcher = updater.dispatcher
 
     dispatcher.add_handler( MessageHandler( ~ Filters.command, activity_tracker.track_activity ) )

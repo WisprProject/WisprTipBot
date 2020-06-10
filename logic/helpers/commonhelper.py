@@ -1,5 +1,4 @@
-from logic.common import messages, clientcommandprocessor
-
+from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
 
 
@@ -31,7 +30,7 @@ def get_user_balance( user ):
 def get_validated_amount( amount, user ):
     try:
         if amount.lower() == 'all':
-            amount = get_user_balance(user)
+            amount = get_user_balance( user )
         else:
             amount = float( amount )
     except ValueError:

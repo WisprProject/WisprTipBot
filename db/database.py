@@ -1,7 +1,6 @@
 import logging
-import sqlite3
 import os
-
+import sqlite3
 from sqlite3 import Error
 
 

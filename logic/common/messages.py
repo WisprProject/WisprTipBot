@@ -1,4 +1,5 @@
-HELP = 'The following commands are at your disposal: /help, /commands, /deposit, /balance, /tip, /withdraw, /market and /rain.\n\n' \
+HELP = 'The following commands are at your disposal: /help, /commands, /deposit, /balance, /tip, /withdraw, ' \
+       '/market and /rain.\n\n' \
        'Tipping format:\n' \
        '/tip <user> <amount>\n\n' \
        'Withdrawing format:\n' \

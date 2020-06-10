@@ -1,11 +1,12 @@
 import json
 import logging
+from datetime import datetime
+
+from requests import Session
+from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 
 from logic.common.botusererror import BotUserError
 from logic.helpers.configuration import Configuration
-from datetime import datetime
-from requests import Session
-from requests.exceptions import ConnectionError, Timeout, TooManyRedirects
 
 global coin_update_time
 global coin_data
@@ -38,7 +39,7 @@ def get_coin_data():
 def update_coin_data_cache():
     url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest'
     parameters = { 'symbol': Configuration.COIN_SYMBOL }
-    headers = { 'Accepts'          : 'application/json',
+    headers = { 'Accepts': 'application/json',
                 'X-CMC_PRO_API_KEY': Configuration.COINMARKETCAP_API_TOKEN }
     session = Session()
     session.headers.update( headers )
@@ -46,7 +47,7 @@ def update_coin_data_cache():
     try:
         global coin_data
         global coin_update_time
-        response = session.get( url, params=parameters )
+        response = session.get( url, params = parameters )
         data = json.loads( response.text )
         if 'error_code' in response.text and data[ 'status' ][ 'error_code' ] == 400:
             raise BotUserError( f'No market info available for {Configuration.COIN_SYMBOL}.' )

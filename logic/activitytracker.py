@@ -1,9 +1,8 @@
 import logging
-
-from logic.common.botusererror import BotUserError
-from db import database
-from db import statements
 from datetime import datetime
+
+from db import database, statements
+from logic.common.botusererror import BotUserError
 from logic.helpers import commonhelper
 from logic.helpers.configuration import Configuration
 

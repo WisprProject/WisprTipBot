@@ -1,10 +1,10 @@
 import logging
-from logic.common import messages, clientcommandprocessor
 
 from logic.activitytracker import ActivityTracker
+from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
-from logic.helpers.configuration import Configuration
 from logic.helpers import commonhelper, markethelper
+from logic.helpers.configuration import Configuration
 
 
 def commands( update ):
@@ -149,8 +149,8 @@ def rain( update ):
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
         return f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to ' \
-                          f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} ' \
-                          f'{Configuration.COIN_SYMBOL} received per user.'
+               f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} ' \
+               f'{Configuration.COIN_SYMBOL} received per user.'
 
     except BotUserError as e:
         return e.message
