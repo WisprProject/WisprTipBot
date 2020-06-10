@@ -140,7 +140,7 @@ def rain( update ):
 
         eligible_users.append( Configuration.TELEGRAM_BOT_NAME )  # Give some to the bot
         amount_per_user = float( amount_total ) / len( eligible_users )
-        amount_per_user = amount_per_user
+        amount_per_user = round( amount_per_user, 8 )
         at_users = '|'
 
         for eligible_user in eligible_users:
