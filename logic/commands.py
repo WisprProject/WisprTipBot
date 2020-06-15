@@ -1,10 +1,13 @@
+import decimal
 import logging
 
+from db import database, statements
 from logic.activitytracker import ActivityTracker
 from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
 from logic.helpers import commonhelper, markethelper
 from logic.helpers.configuration import Configuration
+from logic.helpers.decimalhelper import round_down
 
 logger = logging.getLogger( __name__ )
 
@@ -25,6 +28,10 @@ def deposit( update ):
     except BotUserError as e:
         logger.info( e )
         return e.message
+    except Exception as e:
+        logger.error( e )
+        logger.exception( "message" )
+        return messages.GENERIC_ERROR
 
 
 def tip( update ):
@@ -34,26 +41,35 @@ def tip( update ):
             raise BotUserError( messages.TIP_ERROR )
 
         user = commonhelper.get_username( update )
-        target = arguments[ 1 ]
+        target_user = arguments[ 1 ]
         amount = arguments[ 2 ]
 
-        if '@' not in target:
-            raise BotUserError( f'That user ´{target}´ is not applicable.' )
+        if '@' not in target_user:
+            raise BotUserError( f'That user ´{target_user}´ is not applicable.' )
 
-        target = target[ 1: ]
+        target_user = target_user[ 1: ]
         amount = commonhelper.get_validated_amount( amount, user )
 
-        if target == user:
+        if target_user == user:
             raise BotUserError( 'You can not tip Yourself.' )
 
-        if clientcommandprocessor.run_client_command( 'move', None, user, target, amount ):
-            return f'@{user} tipped @{target} of {amount} {Configuration.COIN_SYMBOL}'
-        else:
-            raise BotUserError( messages.GENERIC_ERROR )
+        users_balance_changes = [ ]
+        users_balance_changes.append( (user, Configuration.COIN_TICKER, str( -amount )) )
+        users_balance_changes.append( (target_user, Configuration.COIN_TICKER, str( amount )) )
+
+        connection = database.create_connection()
+
+        with connection:
+            database.execute_query( connection, statements.INSERT_USER, (target_user,) )
+            database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
+
+            return f'@{user} tipped @{target_user} of {amount} {Configuration.COIN_TICKER}'
 
     except BotUserError as e:
         return e.message
-    except ValueError:
+    except Exception as e:
+        logger.error( e )
+        logger.exception( "message" )
         return messages.GENERIC_ERROR
 
 
@@ -68,7 +84,8 @@ def balance( update ):
             logger.warning( e.message )
 
         user_balance = commonhelper.get_user_balance( user )
-        fiat_balance = user_balance * fiat_price
+        user_balance = round_down( user_balance, 8 )
+        fiat_balance = user_balance * decimal.Decimal( fiat_price )
         fiat_balance = round( fiat_balance, 3 )
         user_balance_rounded = round( user_balance, 3 )
 
@@ -78,15 +95,19 @@ def balance( update ):
             else:
                 message = f'@{user}, Your current balance is empty.'
         elif fiat_balance == 0:
-            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL}'
+            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_TICKER}'
         else:
-            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_SYMBOL} ' \
+            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_TICKER} ' \
                       f'≈  $ {fiat_balance}'
 
         return message
 
     except BotUserError as e:
         return e.message
+    except Exception as e:
+        logger.error( e )
+        logger.exception( "message" )
+        return messages.GENERIC_ERROR
 
 
 def withdraw( update ):
@@ -103,11 +124,12 @@ def withdraw( update ):
         amount = commonhelper.get_validated_amount( amount, user )
 
         clientcommandprocessor.run_client_command( 'sendfrom', None, user, address, amount )
-        return f'@{user} has successfully withdrawn to address: {address} of {amount} {Configuration.COIN_SYMBOL}.'
+        return f'@{user} has successfully withdrawn to address: {address} of {amount} {Configuration.COIN_TICKER}.'
 
     except BotUserError as e:
         return e.message
-    except ValueError:
+    except Exception as e:
+        logger.error( e )
         return messages.GENERIC_ERROR
 
 
@@ -118,10 +140,14 @@ def market( update ):
         fiat_price = round( fiat_price, 4 )
         market_cap = round( market_cap, 2 )
 
-        return f'The current market cap of {Configuration.COIN_SYMBOL} is $ {market_cap}.\n' \
-               f'1 {Configuration.COIN_SYMBOL} is valued at $ {fiat_price}.'
+        return f'The current market cap of {Configuration.COIN_TICKER} is $ {market_cap}.\n' \
+               f'1 {Configuration.COIN_TICKER} is valued at $ {fiat_price}.'
     except BotUserError as e:
         return e.message
+    except Exception as e:
+        logger.error( e )
+        logger.exception( "message" )
+        return messages.GENERIC_ERROR
 
 
 def rain( update ):
@@ -129,7 +155,7 @@ def rain( update ):
     try:
         user = commonhelper.get_username( update )
 
-        if len( arguments ) < 2:
+        if len( arguments ) < 1:
             raise BotUserError( messages.RAIN_ERROR )
 
         amount_total = arguments[ 1 ]
@@ -137,24 +163,38 @@ def rain( update ):
 
         eligible_users = ActivityTracker().get_current_active_users( update, user )
 
-        if len( eligible_users ) <= 0:
+        if len( eligible_users ) == 0:
             raise BotUserError( 'Found no active users except You... :\'(' )
 
         eligible_users.append( Configuration.TELEGRAM_BOT_NAME )  # Give some to the bot
-        amount_per_user = float( amount_total ) / len( eligible_users )
-        amount_per_user = round( amount_per_user, 8 )
+        amount_per_user = amount_total / len( eligible_users )
+        amount_per_user = round_down( amount_per_user, 8 )
+        amount_remainder = round_down( amount_total - amount_per_user * len( eligible_users ) + amount_per_user )
         at_users = '|'
+        users_balance_changes = [ ]
+        connection = database.create_connection()
 
-        for eligible_user in eligible_users:
-            clientcommandprocessor.run_client_command( 'move', None, user, eligible_user, amount_per_user )
-            logger.info( f'rain amount ´{amount_total}´ split between {len( eligible_users )} users.' )
-            at_users = at_users.__add__( ' @' + eligible_user + ' |' )
+        with connection:
+            users_balance_changes.append( (user, Configuration.COIN_TICKER, str( -amount_total )) )
 
-        return f'@{user} has rained {amount_total} {Configuration.COIN_SYMBOL} to ' \
+            for eligible_user in eligible_users:
+                if eligible_user is Configuration.TELEGRAM_BOT_NAME:
+                    users_balance_changes.append( (eligible_user, Configuration.COIN_TICKER, str( amount_remainder )) )
+                else:
+                    users_balance_changes.append( (eligible_user, Configuration.COIN_TICKER, str( amount_per_user )) )
+                at_users = at_users.__add__( ' @' + eligible_user + ' |' )
+
+            database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
+
+        logger.info( f'rain amount ´{amount_total}´ split between {len( eligible_users )} users.' )
+
+        return f'@{user} has rained {amount_total} {Configuration.COIN_TICKER} to ' \
                f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} ' \
-               f'{Configuration.COIN_SYMBOL} received per user.'
+               f'{Configuration.COIN_TICKER} received per user.'
 
     except BotUserError as e:
         return e.message
-    except ValueError:
+    except Exception as e:
+        logger.error( e )
+        logger.exception( "message" )
         return messages.GENERIC_ERROR

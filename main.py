@@ -1,9 +1,10 @@
-import logic.helpers.loggersetup
 import logging
 
 from telegram.ext import CommandHandler, Filters, MessageHandler, Updater
 
-from db import database
+# noinspection PyUnresolvedReferences
+import logic.helpers.loggersetup  # needed for logging, do not remove
+from db import database, statements
 from logic import commands
 from logic.activitytracker import ActivityTracker
 from logic.command import Command
@@ -17,6 +18,8 @@ def main():
 
     with connection:
         database.init_database( connection )
+        database.execute_query( connection, statements.INSERT_USER, (Configuration.TELEGRAM_BOT_NAME,) )
+        database.execute_query( connection, statements.INSERT_COIN, (Configuration.COIN_NAME, Configuration.COIN_TICKER,) )
 
     activity_tracker = ActivityTracker()
     updater = Updater( token = Configuration.TELEGRAM_BOT_TOKEN, request_kwargs = None )

@@ -53,6 +53,18 @@ def execute_query( connection, query, parameters = None ):
         logger.error( e )
 
 
+def execute_many( connection, query, values ):
+    logger.debug( f'SQL: {query}. With values: ´{values}´' )
+    try:
+        cursor = connection.cursor()
+        cursor.executemany( query, values )
+        logger.debug( 'Query execution successful.' )
+
+        return cursor.lastrowid
+    except Error as e:
+        logger.error( e )
+
+
 def fetch_result( connection, query, parameters = None ):
     try:
         cursor = connection.cursor()
