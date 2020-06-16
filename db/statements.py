@@ -35,8 +35,8 @@ UPDATE_USER_BALANCE = '   WITH args ( telegram_username, coin_ticker, off_chain_
                       ' SELECT b.id AS id, ' \
                       '        ( CASE WHEN b.user_id IS NULL THEN u.id ELSE b.user_id END ) AS user_id, ' \
                       '        ( CASE WHEN b.coin_id IS NULL THEN c.id ELSE b.coin_id END ) AS coin_id, ' \
-                      '        ( ( CASE WHEN b.off_chain_balance_amount IS NULL THEN 0 ELSE b.off_chain_balance_amount  END ) + ' \
-                      '             args.off_chain_balance_amount ) ' \
+                      '        ( ROUND((CASE WHEN b.off_chain_balance_amount IS NULL THEN 0 ELSE b.off_chain_balance_amount  END) + ' \
+                      '             args.off_chain_balance_amount, 8)) ' \
                       '   FROM args, user u, coin c' \
                       '   LEFT JOIN balance b ON b.user_id = u.id' \
                       '  WHERE u.telegram_username = args.telegram_username ' \

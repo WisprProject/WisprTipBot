@@ -76,29 +76,19 @@ def tip( update ):
 def balance( update ):
     try:
         user = commonhelper.get_username( update )
-        fiat_price = 0
-
-        try:
-            fiat_price = markethelper.get_fiat_price()
-        except BotUserError as e:
-            logger.warning( e.message )
-
+        fiat_price = markethelper.get_fiat_price()
         user_balance = commonhelper.get_user_balance( user )
         user_balance = round_down( user_balance, 8 )
         fiat_balance = user_balance * decimal.Decimal( fiat_price )
-        fiat_balance = round( fiat_balance, 3 )
-        user_balance_rounded = round( user_balance, 3 )
+        fiat_balance = round_down( fiat_balance, 2 )
 
-        if user_balance_rounded == 0:
-            if user_balance != 0:
-                message = f'@{user}, Your current balance is almost empty, still some dust can be found.'
-            else:
-                message = f'@{user}, Your current balance is empty.'
-        elif fiat_balance == 0:
-            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_TICKER}'
+        if user_balance == 0:
+            message = f'@{user}, Your current balance is empty.'
         else:
-            message = f'@{user}, Your current balance is: {user_balance_rounded} {Configuration.COIN_TICKER} ' \
-                      f'≈  $ {fiat_balance}'
+            message = f'@{user}, Your current balance is: {user_balance} {Configuration.COIN_TICKER}'
+
+        if fiat_balance != 0:
+            message += f' ≈  $ {fiat_balance:.2f}'
 
         return message
 
@@ -181,7 +171,7 @@ def rain( update ):
         eligible_users.append( Configuration.TELEGRAM_BOT_NAME )  # Give some to the bot
         amount_per_user = amount_total / len( eligible_users )
         amount_per_user = round_down( amount_per_user, 8 )
-        amount_remainder = round_down( amount_total - amount_per_user * len( eligible_users ) + amount_per_user )
+        amount_remainder = round_down( amount_total - amount_per_user * len( eligible_users ) + amount_per_user, 8 )
         at_users = '|'
         users_balance_changes = [ ]
         connection = database.create_connection()

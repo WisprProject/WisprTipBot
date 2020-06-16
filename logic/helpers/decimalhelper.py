@@ -14,7 +14,10 @@ def round_down( value, decimals ):
         integer_part = str( d ).split( '.' )[ 0 ]
 
         if decimal.Decimal( integer_part ) != 0:
-            decimals = decimals + len( integer_part )
+            decimals += len( integer_part )
+
+        if str( d.normalize() ).lower().find( 'e' ) != -1:
+            return decimal.Decimal( integer_part )
 
         ctx.prec = decimals
         ctx.rounding = decimal.ROUND_DOWN
