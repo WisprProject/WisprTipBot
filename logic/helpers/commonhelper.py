@@ -1,8 +1,7 @@
-import decimal
-
 from db import database, statements
 from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
+from logic.helpers.configuration import Configuration
 from logic.helpers.decimalhelper import round_down
 
 
@@ -34,9 +33,9 @@ def get_user_balance( user ):
         if user_off_chain_balance is None:
             user_off_chain_balance = 0
 
-        user_off_chain_balance = round_down( user_off_chain_balance )
-        
-        return user_balance + decimal.Decimal( user_off_chain_balance )
+        user_off_chain_balance = round_down( user_off_chain_balance, 8 )
+
+        return user_balance + user_off_chain_balance
     except BotUserError:
         raise BotUserError
 
@@ -46,7 +45,7 @@ def get_validated_amount( amount, user ):
         if amount.lower() == 'all':
             amount = get_user_balance( user )
         else:
-            amount = decimal.Decimal( amount )
+            amount = round_down( amount, 8 )
     except ValueError:
         raise BotUserError( f'´{amount}´ is not a valid amount' )
 
@@ -61,4 +60,19 @@ def get_validated_amount( amount, user ):
     if user_balance < amount:
         raise BotUserError( f'@{user}, You have insufficient funds.' )
 
-    return round_down( amount, 8 )
+    return amount
+
+
+def move_to_main( user ):
+    user_balance = clientcommandprocessor.run_client_command( 'getbalance', None, user )
+    user_balance = round_down( user_balance, 8 )
+
+    if user_balance <= 0:
+        return
+
+    if clientcommandprocessor.run_client_command( 'move', None, user, '', user_balance ):
+        connection = database.create_connection()
+        with connection:
+            database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, Configuration.COIN_TICKER, str( user_balance ),) )
+    else:
+        raise Exception( f'Failed to move {user} balance {user_balance} to main account.' )

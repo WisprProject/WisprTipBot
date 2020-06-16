@@ -123,13 +123,25 @@ def withdraw( update ):
         amount = arguments[ 2 ]
         amount = commonhelper.get_validated_amount( amount, user )
 
-        clientcommandprocessor.run_client_command( 'sendfrom', None, user, address, amount )
+        commonhelper.move_to_main( user )
+
+        clientcommandprocessor.run_client_command( 'sendtoaddress', None, address, amount )
+
+        try:
+            connection = database.create_connection()
+            with connection:
+                database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, Configuration.COIN_TICKER, str( -amount ),) )
+        except Exception as e:
+            logger.error( e )
+            return messages.GENERIC_ERROR
+
         return f'@{user} has successfully withdrawn to address: {address} of {amount} {Configuration.COIN_TICKER}.'
 
     except BotUserError as e:
         return e.message
     except Exception as e:
         logger.error( e )
+        logger.exception( "message" )
         return messages.GENERIC_ERROR
 
 

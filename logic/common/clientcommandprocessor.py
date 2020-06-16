@@ -28,4 +28,4 @@ def run_client_command( command, value_to_return, *command_arguments ):
             return result[ value_to_return ]
 
     except JSONRPCException as e:
-        logger.error( f"Failed to get a successful result for command: {command}. {e.message}" )
+        raise Exception( f"Failed to get a successful result for command: {command}. {e.message}", e )
