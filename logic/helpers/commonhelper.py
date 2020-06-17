@@ -34,16 +34,17 @@ def get_user_balance( user ):
             user_off_chain_balance = 0
 
         user_off_chain_balance = round_down( user_off_chain_balance, 8 )
+        total_balance = user_balance + user_off_chain_balance
 
-        return user_balance + user_off_chain_balance
+        return total_balance, user_balance
     except BotUserError:
         raise BotUserError
 
 
-def get_validated_amount( amount, user ):
+def get_validated_amount( amount, user, user_balance ):
     try:
         if amount.lower() == 'all':
-            amount = get_user_balance( user )
+            amount = user_balance
         else:
             amount = round_down( amount, 8 )
     except ValueError:
@@ -55,24 +56,19 @@ def get_validated_amount( amount, user ):
     if float( amount ) < 0.1:
         raise BotUserError( f'Amount has to be greater or equal to 0.1' )
 
-    user_balance = get_user_balance( user )
-
     if user_balance < amount:
         raise BotUserError( f'@{user}, You have insufficient funds.' )
 
     return amount
 
 
-def move_to_main( user ):
-    user_balance = clientcommandprocessor.run_client_command( 'getbalance', None, user )
-    user_balance = round_down( user_balance, 8 )
-
-    if user_balance <= 0:
+def move_to_main( user, wallet_balance ):
+    if wallet_balance <= 0:
         return
 
-    if clientcommandprocessor.run_client_command( 'move', None, user, '', user_balance ):
+    if clientcommandprocessor.run_client_command( 'move', None, user, '', wallet_balance ):
         connection = database.create_connection()
         with connection:
-            database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, Configuration.COIN_TICKER, str( user_balance ),) )
+            database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, Configuration.COIN_TICKER, str( wallet_balance ),) )
     else:
-        raise Exception( f'Failed to move {user} balance {user_balance} to main account.' )
+        raise Exception( f'Failed to move {user} balance {wallet_balance} to main account.' )

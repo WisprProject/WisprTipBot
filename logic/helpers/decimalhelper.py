@@ -3,7 +3,10 @@ import decimal
 
 def round_down( value, decimals ):
     with decimal.localcontext() as ctx:
-        d = decimal.Decimal( value )
+        try:
+            d = decimal.Decimal( value )
+        except decimal.InvalidOperation:
+            raise ValueError
 
         if type( value ) is int:
             return d

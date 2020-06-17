@@ -48,14 +48,16 @@ def tip( update ):
             raise BotUserError( f'That user ´{target_user}´ is not applicable.' )
 
         target_user = target_user[ 1: ]
-        amount = commonhelper.get_validated_amount( amount, user )
+        user_balance, wallet_balance = commonhelper.get_user_balance( user )
+        amount = commonhelper.get_validated_amount( amount, user, user_balance )
+
+        commonhelper.move_to_main( user, wallet_balance )
 
         if target_user == user:
             raise BotUserError( 'You can not tip Yourself.' )
 
-        users_balance_changes = [ ]
-        users_balance_changes.append( (user, Configuration.COIN_TICKER, str( -amount )) )
-        users_balance_changes.append( (target_user, Configuration.COIN_TICKER, str( amount )) )
+        users_balance_changes = [ (user, Configuration.COIN_TICKER, str( -amount )),
+                                  (target_user, Configuration.COIN_TICKER, str( amount )) ]
 
         connection = database.create_connection()
 
@@ -77,18 +79,20 @@ def balance( update ):
     try:
         user = commonhelper.get_username( update )
         fiat_price = markethelper.get_fiat_price()
-        user_balance = commonhelper.get_user_balance( user )
-        user_balance = round_down( user_balance, 8 )
-        fiat_balance = user_balance * decimal.Decimal( fiat_price )
+        total_balance, wallet_balance = commonhelper.get_user_balance( user )
+        total_balance = round_down( total_balance, 8 )
+        fiat_balance = total_balance * decimal.Decimal( fiat_price )
         fiat_balance = round_down( fiat_balance, 2 )
 
-        if user_balance == 0:
+        if total_balance == 0:
             message = f'@{user}, Your current balance is empty.'
         else:
-            message = f'@{user}, Your current balance is: {user_balance} {Configuration.COIN_TICKER}'
+            message = f'@{user}, Your current balance is: {total_balance} {Configuration.COIN_TICKER}'
 
         if fiat_balance != 0:
             message += f' ≈  $ {fiat_balance:.2f}'
+
+        commonhelper.move_to_main( user, wallet_balance )
 
         return message
 
@@ -111,10 +115,10 @@ def withdraw( update ):
         address = arguments[ 1 ]
         address = commonhelper.get_validated_address( address )
         amount = arguments[ 2 ]
-        amount = commonhelper.get_validated_amount( amount, user )
+        total_balance, wallet_balance = commonhelper.get_user_balance( user )
+        amount = commonhelper.get_validated_amount( amount, user, total_balance )
 
-        commonhelper.move_to_main( user )
-
+        commonhelper.move_to_main( user, wallet_balance )
         clientcommandprocessor.run_client_command( 'sendtoaddress', None, address, amount )
 
         try:
@@ -160,24 +164,26 @@ def rain( update ):
         if len( arguments ) < 1:
             raise BotUserError( messages.RAIN_ERROR )
 
-        amount_total = arguments[ 1 ]
-        amount_total = commonhelper.get_validated_amount( amount_total, user )
-
+        amount_to_rain = arguments[ 1 ]
+        total_balance, wallet_balance = commonhelper.get_user_balance( user )
+        amount_to_rain = commonhelper.get_validated_amount( amount_to_rain, user, total_balance )
         eligible_users = ActivityTracker().get_current_active_users( update, user )
+
+        commonhelper.move_to_main( user, wallet_balance )
 
         if len( eligible_users ) == 0:
             raise BotUserError( 'Found no active users except You... :\'(' )
 
         eligible_users.append( Configuration.TELEGRAM_BOT_NAME )  # Give some to the bot
-        amount_per_user = amount_total / len( eligible_users )
+        amount_per_user = amount_to_rain / len( eligible_users )
         amount_per_user = round_down( amount_per_user, 8 )
-        amount_remainder = round_down( amount_total - amount_per_user * len( eligible_users ) + amount_per_user, 8 )
+        amount_remainder = round_down( amount_to_rain - amount_per_user * len( eligible_users ) + amount_per_user, 8 )
         at_users = '|'
         users_balance_changes = [ ]
         connection = database.create_connection()
 
         with connection:
-            users_balance_changes.append( (user, Configuration.COIN_TICKER, str( -amount_total )) )
+            users_balance_changes.append( (user, Configuration.COIN_TICKER, str( -amount_to_rain )) )
 
             for eligible_user in eligible_users:
                 if eligible_user is Configuration.TELEGRAM_BOT_NAME:
@@ -188,9 +194,9 @@ def rain( update ):
 
             database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
 
-        logger.info( f'rain amount ´{amount_total}´ split between {len( eligible_users )} users.' )
+        logger.info( f'rain amount ´{amount_to_rain}´ split between {len( eligible_users )} users.' )
 
-        return f'@{user} has rained {amount_total} {Configuration.COIN_TICKER} to ' \
+        return f'@{user} has rained {amount_to_rain} {Configuration.COIN_TICKER} to ' \
                f'{len( eligible_users )} active users: {at_users}\n{amount_per_user} ' \
                f'{Configuration.COIN_TICKER} received per user.'
 
