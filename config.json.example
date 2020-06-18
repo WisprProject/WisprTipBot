@@ -14,6 +14,11 @@
         "password": "YOUR-RPC-PASSWORD",
         "host": "YOUR-RPC-IP",
         "port": "YOUR-RPC-PORT"
+      },
+      "BLOCKCHAIN_EXPLORER": {
+        "url": "YOUR-COIN-BLOCKCHAIN-EXPLORER-URL",
+        "tx": "URL-PART-FOR-GETTING-TRANSACTION",
+        "address": "URL-PART-FOR-GETTING-ADDRESS"
       }
     }
   ],
