@@ -2,21 +2,18 @@ import logging
 
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 
-from logic.helpers.configuration import Configuration
-
 logger = logging.getLogger( __name__ )
-RPC_CONFIGURATION = Configuration.RPC_CONFIGURATION
 
 
-def run_client_command( command, value_to_return, *command_arguments ):
+def run_client_command( rpc_configuration, command, value_to_return, *command_arguments ):
     logger.info(
         f"Running command: {command}, with arguments: {command_arguments} "
         f"and getting value from result: {value_to_return}." )
 
     try:
         rpc = AuthServiceProxy(
-            "http://" + RPC_CONFIGURATION[ "username" ] + ":" + RPC_CONFIGURATION[ "password" ] + "@"
-            + RPC_CONFIGURATION[ "host" ] + ":" + RPC_CONFIGURATION[ "port" ] )
+            "http://" + rpc_configuration[ "username" ] + ":" + rpc_configuration[ "password" ] + "@"
+            + rpc_configuration[ "host" ] + ":" + rpc_configuration[ "port" ] )
 
         rpc_function_to_call = getattr( rpc, command )
 

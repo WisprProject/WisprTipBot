@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import datetime
 
-from logic.helpers.configuration import Configuration
+from logic.common.configuration import Configuration
 
 now = datetime.now().strftime( '%Y%m%d-%H%M%S' )
 log_filename = f'out/logs/{now}.log'

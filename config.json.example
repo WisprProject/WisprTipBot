@@ -5,15 +5,19 @@
   "REQUEST_KWARGS": {
     "proxy_url": "YOUR-PROXY-HOST-HERE-IF-NEEDED:YOUR-PROXY-PORT-HERE-IF-NEEDED"
   },
-  "COIN_TICKER": "YOUR-COIN-TICKER",
-  "COIN_NAME": "YOUR-COIN-NAME",
+  "COINS": [
+    {
+      "TICKER": "YOUR-COIN-TICKER",
+      "NAME": "YOUR-COIN-NAME",
+      "RPC_CONFIGURATION": {
+        "username": "YOUR-RPC-USERNAME",
+        "password": "YOUR-RPC-PASSWORD",
+        "host": "YOUR-RPC-IP",
+        "port": "YOUR-RPC-PORT"
+      }
+    }
+  ],
   "COINMARKETCAP_API_TOKEN": "YOUR-COINMARKETCAP-API-TOKEN-HERE",
   "COINMARKETCAP_CACHE_UPDATE_INTERVAL": 180,
-  "CHAT_ACTIVITY_TIME": 28800‬,
-  "RPC_CONFIGURATION": {
-    "username": "YOUR-RPC-USERNAME",
-    "password": "YOUR-RPC-PASSWORD",
-    "host": "YOUR-RPC-IP",
-    "port": "YOUR-RPC-PORT"
-  }
+  "CHAT_ACTIVITY_TIME": 28800‬
 }

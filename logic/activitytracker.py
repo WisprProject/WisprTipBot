@@ -3,8 +3,8 @@ from datetime import datetime
 
 from db import database, statements
 from logic.common.botusererror import BotUserError
+from logic.common.configuration import Configuration
 from logic.helpers import commonhelper
-from logic.helpers.configuration import Configuration
 
 logger = logging.getLogger( __name__ )
 
