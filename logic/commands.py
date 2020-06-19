@@ -24,7 +24,7 @@ def market( update, coin_properties ):
     ticker = coin_properties[ 'TICKER' ]
     fiat_price = markethelper.get_fiat_price( ticker )
     market_cap = markethelper.get_market_cap( ticker )
-    fiat_price = round( fiat_price, 8 )
+    fiat_price = round_down( fiat_price, 2 )
     market_cap = round( market_cap, 2 )
 
     return f'The current market cap of {ticker} is $ {market_cap}.\n' \
