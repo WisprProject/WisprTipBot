@@ -3,10 +3,10 @@ import decimal
 
 def round_down( value, decimals ):
     with decimal.localcontext() as ctx:
-        try:
-            d = decimal.Decimal( value )
-        except decimal.InvalidOperation:
-            raise ValueError
+        if type( value ) is float:
+            value = str( value )
+
+        d = decimal.Decimal( value )
 
         if type( value ) is int:
             return d
@@ -25,4 +25,4 @@ def round_down( value, decimals ):
         ctx.prec = decimals
         ctx.rounding = decimal.ROUND_DOWN
 
-        return d.normalize()
+        return ctx.create_decimal( value ).normalize()
