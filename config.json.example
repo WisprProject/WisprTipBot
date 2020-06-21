@@ -9,6 +9,8 @@
     {
       "TICKER": "YOUR-COIN-TICKER",
       "NAME": "YOUR-COIN-NAME",
+      "MINIMUM_WITHDRAW": 1,
+      "WITHDRAWAL_FEE": 1,
       "RPC_CONFIGURATION": {
         "username": "YOUR-RPC-USERNAME",
         "password": "YOUR-RPC-PASSWORD",

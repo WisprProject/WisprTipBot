@@ -74,27 +74,44 @@ def withdraw( update, coin_properties ):
     amount = arguments[ 2 ]
     total_balance, wallet_balance = commonhelper.get_user_balance( user, coin_properties )
     amount = commonhelper.get_validated_amount( amount, user, total_balance )
+    configured_transaction_fee = round_down( coin_properties[ 'WITHDRAWAL_FEE' ], 8 )
+
+    if amount < coin_properties[ 'MINIMUM_WITHDRAW' ]:
+        raise BotUserError( f'Minimum allowed withdrawal amount is {configured_transaction_fee}{ticker}.' )
+
+    if arguments[ 2 ].lower is 'all':
+        amount -= configured_transaction_fee
+    elif amount + configured_transaction_fee > total_balance:
+        raise BotUserError( f'Unable to withdraw {amount}{ticker}. '
+                            f'Amount combined with withdrawal fee {configured_transaction_fee}{ticker} exceeds the available balance: '
+                            f'{round_down( amount + configured_transaction_fee, 8 )}{ticker} > {round_down( total_balance, 8 )}{ticker}.' )
 
     commonhelper.move_to_main( coin_properties, user, wallet_balance )
-    transaction = clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'sendtoaddress', None, address, amount )
+    transaction_id = clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'sendtoaddress', None, address, amount )
+    real_transaction_fee = commonhelper.get_transaction_fee( coin_properties[ 'RPC_CONFIGURATION' ], transaction_id )
+
+    users_balance_changes = [ (user, ticker, str( -amount - configured_transaction_fee )),
+                              (Configuration.TELEGRAM_BOT_NAME, ticker, str( configured_transaction_fee + real_transaction_fee )) ]
 
     try:
         connection = database.create_connection()
         with connection:
-            database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, ticker, str( -amount ),) )
+            database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
     except Exception as e:
         logger.error( e )
         return messages.GENERIC_ERROR
 
-    blockchain_explorer = coin_properties[ "BLOCKCHAIN_EXPLORER" ]
+    blockchain_explorer = coin_properties[ 'BLOCKCHAIN_EXPLORER' ]
 
     if blockchain_explorer is None:
-        return f'@{user} has successfully withdrawn {amount}{ticker} to address: {address}. TX: {transaction}'
+        return f'@{user} has successfully withdrawn {amount}{ticker} to address: {address}. TX: {transaction_id}. ' \
+               f'Withdrawal fee of {configured_transaction_fee}{ticker} was applied.'
 
     address_url = f'<a href="{blockchain_explorer[ "url" ]}/{blockchain_explorer[ "address" ]}/{address}">{address}</a>'
-    transaction_url = f'<a href="{blockchain_explorer[ "url" ]}/{blockchain_explorer[ "tx" ]}/{transaction}">{transaction}</a>'
+    transaction_url = f'<a href="{blockchain_explorer[ "url" ]}/{blockchain_explorer[ "tx" ]}/{transaction_id}">{transaction_id}</a>'
 
-    return f'@{user} has successfully withdrawn to address: {address_url} of {amount} {ticker}.<pre>\r\n</pre>TX:&#160;{transaction_url}.', 'HTML',
+    return f'@{user} has successfully withdrawn to address: {address_url} of {amount} {ticker}.<pre>\r\n</pre>TX:&#160;{transaction_url}. ' \
+           f'Withdrawal fee of {configured_transaction_fee}{ticker} was applied.', 'HTML',
 
 
 def tip( update, coin_properties ):

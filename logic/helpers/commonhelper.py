@@ -71,3 +71,9 @@ def move_to_main( coin_properties, user, wallet_balance ):
             database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, coin_properties[ 'TICKER' ], str( wallet_balance ),) )
     else:
         raise Exception( f'Failed to move {user} balance {wallet_balance} to main account.' )
+
+def get_transaction_fee( rpc_configuration, transaction_id ):
+    if transaction_id is None:
+        raise Exception( 'Transaction id is missing' )
+
+    return clientcommandprocessor.run_client_command( rpc_configuration, 'gettransaction', 'fee', transaction_id )
