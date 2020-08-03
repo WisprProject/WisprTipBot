@@ -1,7 +1,10 @@
-from db import database, statements
+from db import database
+from db.statements import Statements
 from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
 from logic.helpers.decimalhelper import round_down
+from logic.model.coinproperties import CoinProperties
+from logic.model.rpcconfiguration import RpcConfiguration
 
 
 def get_username( update ):
@@ -13,21 +16,21 @@ def get_username( update ):
     raise BotUserError( messages.SET_USERNAME )
 
 
-def get_validated_address( address, coin_properties ):
+def get_validated_address( address, coin_properties: CoinProperties ):
     if len( address ) == 34:
-        if clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'validateaddress', 'isvalid', address ):
+        if clientcommandprocessor.run_client_command( coin_properties.rpc_configuration, 'validateaddress', 'isvalid', address ):
             return address
 
     raise BotUserError( f'´{address}´ is not a valid address.' )
 
 
-def get_user_balance( user, coin_properties ):
+def get_user_balance( user, coin_properties: CoinProperties ):
     try:
-        user_balance = clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'getbalance', None, user )
+        user_balance = clientcommandprocessor.run_client_command( coin_properties.rpc_configuration, 'getbalance', None, user )
         connection = database.create_connection()
 
         with connection:
-            user_off_chain_balance = database.fetch_result( connection, statements.SELECT_USER_OFF_CHAIN_BALANCE, (user, coin_properties[ 'TICKER' ]) )
+            user_off_chain_balance = database.fetch_result( connection, Statements[ 'SELECT_USER_OFF_CHAIN_BALANCE' ], (user, coin_properties.ticker) )
 
         if user_off_chain_balance is None:
             user_off_chain_balance = 0
@@ -61,18 +64,20 @@ def get_validated_amount( amount, user, user_balance ):
     return amount
 
 
-def move_to_main( coin_properties, user, wallet_balance ):
+def move_to_main( coin_properties: CoinProperties, user, wallet_balance ):
     if wallet_balance <= 0:
         return
 
-    if clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'move', None, user, '', wallet_balance ):
+    if clientcommandprocessor.run_client_command( coin_properties.rpc_configuration, 'move', None, user, '', wallet_balance ):
         connection = database.create_connection()
         with connection:
-            database.execute_query( connection, statements.UPDATE_USER_BALANCE, (user, coin_properties[ 'TICKER' ], str( wallet_balance ),) )
+            database.execute_query( connection, Statements[ 'INSERT_USER' ], (user,) )
+            database.execute_query( connection, Statements[ 'UPDATE_USER_BALANCE' ], (user, coin_properties.ticker, str( wallet_balance ),) )
     else:
         raise Exception( f'Failed to move {user} balance {wallet_balance} to main account.' )
 
-def get_transaction_fee( rpc_configuration, transaction_id ):
+
+def get_transaction_fee( rpc_configuration: RpcConfiguration, transaction_id ):
     if transaction_id is None:
         raise Exception( 'Transaction id is missing' )
 

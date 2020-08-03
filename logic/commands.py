@@ -1,27 +1,30 @@
 import decimal
 import logging
 
-from db import database, statements
+from db import database
+from db.statements import Statements
 from logic.activitytracker import ActivityTracker
 from logic.common import clientcommandprocessor, messages
 from logic.common.botusererror import BotUserError
 from logic.common.configuration import Configuration
 from logic.helpers import commonhelper, markethelper
 from logic.helpers.decimalhelper import round_down
+from logic.model.blockchainexplorerconfiguration import BlockchainExplorerConfiguration
+from logic.model.coinproperties import CoinProperties
 
 logger = logging.getLogger( __name__ )
 
 
-def commands( update, coin_properties ):
-    return messages.commands( coin_properties[ 'TICKER' ].lower() ),
+def commands( update, coin_properties: CoinProperties ):
+    return messages.commands( coin_properties.ticker.lower() ),
 
 
-def help( update, coin_properties ):
-    return messages.help( coin_properties[ 'TICKER' ].lower() ),
+def help( update, coin_properties: CoinProperties ):
+    return messages.help( coin_properties.ticker.lower() ),
 
 
-def market( update, coin_properties ):
-    ticker = coin_properties[ 'TICKER' ]
+def market( update, coin_properties: CoinProperties ):
+    ticker = coin_properties.ticker
     fiat_price = markethelper.get_fiat_price( ticker )
     market_cap = markethelper.get_market_cap( ticker )
     fiat_price = round_down( fiat_price, 2 )
@@ -31,8 +34,8 @@ def market( update, coin_properties ):
            f'1 {ticker} is valued at $ {fiat_price}.',
 
 
-def balance( update, coin_properties ):
-    ticker = coin_properties[ 'TICKER' ]
+def balance( update, coin_properties: CoinProperties ):
+    ticker = coin_properties.ticker
     user = commonhelper.get_username( update )
     fiat_price = markethelper.get_fiat_price( ticker )
     total_balance, wallet_balance = commonhelper.get_user_balance( user, coin_properties )
@@ -53,15 +56,15 @@ def balance( update, coin_properties ):
     return message,
 
 
-def deposit( update, coin_properties ):
+def deposit( update, coin_properties: CoinProperties ):
     user = commonhelper.get_username( update )
-    deposit_address = clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'getaccountaddress', None, user )
+    deposit_address = clientcommandprocessor.run_client_command( coin_properties.rpc_configuration, 'getaccountaddress', None, user )
 
     return f'@{user}, Your depositing address is: {deposit_address}',
 
 
-def withdraw( update, coin_properties ):
-    ticker = coin_properties[ 'TICKER' ]
+def withdraw( update, coin_properties: CoinProperties ):
+    ticker = coin_properties.ticker
     arguments = update.message.text.split( ' ' )
 
     user = commonhelper.get_username( update )
@@ -74,9 +77,9 @@ def withdraw( update, coin_properties ):
     amount = arguments[ 2 ]
     total_balance, wallet_balance = commonhelper.get_user_balance( user, coin_properties )
     amount = commonhelper.get_validated_amount( amount, user, total_balance )
-    configured_transaction_fee = round_down( coin_properties[ 'WITHDRAWAL_FEE' ], 8 )
+    configured_transaction_fee = round_down( coin_properties.withdrawal_fee, 8 )
 
-    if amount < coin_properties[ 'MINIMUM_WITHDRAW' ]:
+    if amount < coin_properties.minimum_withdraw:
         raise BotUserError( f'Minimum allowed withdrawal amount is {configured_transaction_fee}{ticker}.' )
 
     if arguments[ 2 ].lower is 'all':
@@ -87,8 +90,8 @@ def withdraw( update, coin_properties ):
                             f'{round_down( amount + configured_transaction_fee, 8 )}{ticker} > {round_down( total_balance, 8 )}{ticker}.' )
 
     commonhelper.move_to_main( coin_properties, user, wallet_balance )
-    transaction_id = clientcommandprocessor.run_client_command( coin_properties[ 'RPC_CONFIGURATION' ], 'sendtoaddress', None, address, amount )
-    real_transaction_fee = commonhelper.get_transaction_fee( coin_properties[ 'RPC_CONFIGURATION' ], transaction_id )
+    transaction_id = clientcommandprocessor.run_client_command( coin_properties.rpc_configuration, 'sendtoaddress', None, address, amount )
+    real_transaction_fee = commonhelper.get_transaction_fee( coin_properties.rpc_configuration, transaction_id )
 
     users_balance_changes = [ (user, ticker, str( -amount - configured_transaction_fee )),
                               (Configuration.TELEGRAM_BOT_NAME, ticker, str( configured_transaction_fee + real_transaction_fee )) ]
@@ -96,26 +99,23 @@ def withdraw( update, coin_properties ):
     try:
         connection = database.create_connection()
         with connection:
-            database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
+            database.execute_many( connection, Statements[ 'UPDATE_USER_BALANCE' ], users_balance_changes )
     except Exception as e:
         logger.error( e )
         return messages.GENERIC_ERROR
 
-    blockchain_explorer = coin_properties[ 'BLOCKCHAIN_EXPLORER' ]
+    blockchain_explorer: BlockchainExplorerConfiguration = coin_properties.blockchain_explorer
 
-    if blockchain_explorer is None:
-        return f'@{user} has successfully withdrawn {amount}{ticker} to address: {address}. TX: {transaction_id}. ' \
-               f'Withdrawal fee of {configured_transaction_fee}{ticker} was applied.'
+    if blockchain_explorer is not None:
+        address = f'<a href="{blockchain_explorer.url}/{blockchain_explorer.address_prefix}/{address}">{address}</a>'
+        transaction_id = f'<a href="{blockchain_explorer.url}/{blockchain_explorer.tx_prefix}/{transaction_id}">{transaction_id}</a>'
 
-    address_url = f'<a href="{blockchain_explorer[ "url" ]}/{blockchain_explorer[ "address" ]}/{address}">{address}</a>'
-    transaction_url = f'<a href="{blockchain_explorer[ "url" ]}/{blockchain_explorer[ "tx" ]}/{transaction_id}">{transaction_id}</a>'
-
-    return f'@{user} has successfully withdrawn to address: {address_url} of {amount} {ticker}.<pre>\r\n</pre>TX:&#160;{transaction_url}. ' \
-           f'Withdrawal fee of {configured_transaction_fee}{ticker} was applied.', 'HTML',
+    return f'@{user} has successfully withdrawn {amount}{ticker} to address: {address}.<pre>\r\n</pre>TX:&#160;{transaction_id}. ' \
+           f'Withdrawal fee of {configured_transaction_fee}{ticker} was applied.', 'HTML'
 
 
-def tip( update, coin_properties ):
-    ticker = coin_properties[ 'TICKER' ]
+def tip( update, coin_properties: CoinProperties ):
+    ticker = coin_properties.ticker
     arguments = update.message.text.split( ' ' )
 
     if len( arguments ) < 3:
@@ -143,14 +143,14 @@ def tip( update, coin_properties ):
     connection = database.create_connection()
 
     with connection:
-        database.execute_query( connection, statements.INSERT_USER, (target_user,) )
-        database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
+        database.execute_query( connection, Statements[ 'INSERT_USER' ], (target_user,) )
+        database.execute_many( connection, Statements[ 'UPDATE_USER_BALANCE' ], users_balance_changes )
 
     return f'@{user} tipped @{target_user} of {amount} {ticker}',
 
 
-def rain( update, coin_properties ):
-    ticker = coin_properties[ 'TICKER' ]
+def rain( update, coin_properties: CoinProperties ):
+    ticker = coin_properties.ticker
     arguments = update.message.text.split( ' ' )
     user = commonhelper.get_username( update )
 
@@ -185,7 +185,7 @@ def rain( update, coin_properties ):
                 users_balance_changes.append( (eligible_user, ticker, str( amount_per_user )) )
             at_users = at_users.__add__( ' @' + eligible_user + ' |' )
 
-        database.execute_many( connection, statements.UPDATE_USER_BALANCE, users_balance_changes )
+        database.execute_many( connection, Statements[ 'UPDATE_USER_BALANCE' ], users_balance_changes )
 
     logger.info( f'rain amount ´{amount_to_rain}´ split between {len( eligible_users )} users.' )
 

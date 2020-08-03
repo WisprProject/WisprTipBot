@@ -1,7 +1,8 @@
 import logging
 from datetime import datetime
 
-from db import database, statements
+from db import database
+from db.statements import Statements
 from logic.common.botusererror import BotUserError
 from logic.common.configuration import Configuration
 from logic.helpers import commonhelper
@@ -16,7 +17,7 @@ class ActivityTracker:
         connection = database.create_connection()
 
         with connection:
-            active_users = database.fetch_result( connection, statements.SELECT_ALL_ACTIVITY_WITH_USERNAMES )
+            active_users = database.fetch_result( connection, Statements[ 'SELECT_ALL_ACTIVITY_WITH_USERNAMES' ] )
             logger.debug( f'Active users fetched.' )
 
         if self.active_users_cache is not None:
@@ -51,12 +52,12 @@ class ActivityTracker:
             connection = database.create_connection()
 
             with connection:
-                user_id = database.fetch_result( connection, statements.SELECT_USER_ID_BY_TELEGRAM_USERNAME, (user,) )
+                user_id = database.fetch_result( connection, Statements[ 'SELECT_USER_ID_BY_TELEGRAM_USERNAME' ], (user,) )
 
                 if user_id is None:
-                    user_id = database.execute_query( connection, statements.INSERT_USER, (user,) )
+                    user_id = database.execute_query( connection, Statements[ 'INSERT_USER' ], (user,) )
 
-                database.execute_query( connection, statements.UPDATE_USER_ACTIVITY, (user_id, chat_id, current_time,) )
+                database.execute_query( connection, Statements[ 'UPDATE_USER_ACTIVITY' ], (user_id, chat_id, current_time,) )
 
             if chat_id not in self.active_users_cache:
                 self.active_users_cache.update( { chat_id: { user: current_time } } )

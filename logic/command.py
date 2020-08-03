@@ -2,6 +2,7 @@ import logging
 
 from logic.common import messages
 from logic.common.botusererror import BotUserError
+from logic.model.coinproperties import CoinProperties
 
 logger = logging.getLogger( __name__ )
 
@@ -11,7 +12,7 @@ class Command:
     command_to_run = None
     coin_properties = None
 
-    def __init__( self, command_to_run, coin_properties, activity_tracker = None ):
+    def __init__( self, command_to_run, coin_properties: CoinProperties, activity_tracker = None ):
         self.activity_tracker = activity_tracker
         self.command_to_run = command_to_run
         self.coin_properties = coin_properties

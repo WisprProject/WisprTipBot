@@ -3,6 +3,8 @@ import os
 import sqlite3
 from sqlite3 import Error
 
+from db.statements import Statements
+
 logger = logging.getLogger( __name__ )
 
 
@@ -42,7 +44,7 @@ def init_database( connection ):
 
 
 def execute_query( connection, query, parameters = None ):
-    logger.debug( f'SQL: {query}. With parameters: ´{parameters}´' )
+    logger.info(f'Running query: {[k for k,v in Statements.items() if v == query]}, with parameters: ´{parameters}´.')
     try:
         cursor = connection.cursor()
         cursor.execute( query, parameters )
@@ -54,11 +56,11 @@ def execute_query( connection, query, parameters = None ):
 
 
 def execute_many( connection, query, values ):
-    logger.debug( f'SQL: {query}. With values: ´{values}´' )
+    logger.info(f'Running query: {[k for k,v in Statements.items() if v == query]}, with values: ´{values}´.')
     try:
         cursor = connection.cursor()
         cursor.executemany( query, values )
-        logger.debug( 'Query execution successful.' )
+        logger.info( 'Query execution successful.' )
 
         return cursor.lastrowid
     except Error as e:
@@ -66,6 +68,7 @@ def execute_many( connection, query, values ):
 
 
 def fetch_result( connection, query, parameters = None ):
+    logger.info( f'Running query: {[ k for k, v in Statements.items() if v == query ]}, with parameters: ´{parameters}´.' )
     try:
         cursor = connection.cursor()
 
