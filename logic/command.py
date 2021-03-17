@@ -1,5 +1,8 @@
 import logging
 
+from telegram import Update
+from telegram.ext import CallbackContext
+
 from logic.common import messages
 from logic.common.botusererror import BotUserError
 from logic.model.coinproperties import CoinProperties
@@ -17,7 +20,9 @@ class Command:
         self.command_to_run = command_to_run
         self.coin_properties = coin_properties
 
-    def __call__( self, bot, update ):
+    def __call__( self, update: Update, callbackContext: CallbackContext ):
+        bot = callbackContext.bot
+
         if self.activity_tracker is not None:
             self.activity_tracker.track_activity( bot, update )
 

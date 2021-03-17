@@ -7,7 +7,7 @@
 
 *  `apt-get install python3`
 *  `apt-get install python3-pip`
-*  `pip3 install python-telegram-bot --upgrade`
+*  `pip3 install --force-reinstall python-telegram-bot==13.4.1`
 *  `pip3 install python-bitcoinrpc`
 
 * Setup ufw firewall to only allow the connectivity between the Wispr Wallet * The network, all other ports can be forced to be down.
